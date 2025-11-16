@@ -231,15 +231,9 @@ const Header = () => {
                   </Button>
                 </>
               ) : (
-                <>
-                  <Button className="w-full">
-                    <TbTools className="text-white" />
-                    Jadi Penyedia
-                  </Button>
-                  <Button variant="outline" className="w-full" onClick={login}>
-                    <FcGoogle /> Masuk
-                  </Button>
-                </>
+                <Button variant="outline" className="w-full" onClick={login}>
+                  <FcGoogle /> Masuk
+                </Button>
               )}
             </div>
           </nav>
