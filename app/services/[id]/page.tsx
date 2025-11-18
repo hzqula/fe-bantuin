@@ -24,6 +24,7 @@ import {
   TbMessageCircle,
   TbChevronLeft,
   TbChevronRight,
+  TbMessage,
 } from "react-icons/tb";
 
 interface ServiceDetail {
@@ -196,14 +197,14 @@ const ServiceDetailPage = () => {
           {/* Breadcrumb */}
           <div className="mb-6 text-sm text-gray-600">
             <span
-              className="hover:text-green-600 cursor-pointer"
+              className="hover:text-primary cursor-pointer"
               onClick={() => router.push("/")}
             >
               Home
             </span>
             <span className="mx-2">&gt;</span>
             <span
-              className="hover:text-green-600 cursor-pointer"
+              className="hover:text-primary cursor-pointer"
               onClick={() => router.push("/services")}
             >
               Jasa
@@ -216,7 +217,7 @@ const ServiceDetailPage = () => {
             {/* Main Content */}
             <div className="lg:col-span-2 space-y-6">
               {/* Image Slideshow */}
-              <Card className="overflow-hidden">
+              <Card className="overflow-hidden py-0 border-2 border-secondary">
                 <div className="relative h-80 bg-gray-100">
                   {service.images.length > 0 ? (
                     <Image
@@ -274,7 +275,7 @@ const ServiceDetailPage = () => {
                     </Badge>
                   </div>
 
-                  <CardTitle className="text-2xl mb-2">
+                  <CardTitle className="text-2xl mb-2 font-display">
                     {service.title}
                   </CardTitle>
 
@@ -332,25 +333,25 @@ const ServiceDetailPage = () => {
                         </h3>
                         <ul className="space-y-2">
                           <li className="flex items-start gap-2">
-                            <TbCheck className="h-5 w-5 text-green-600 mt-0.5 shrink-0" />
+                            <TbCheck className="h-5 w-5 text-primary mt-0.5 shrink-0" />
                             <span className="text-gray-700">
                               Layanan profesional dan terpercaya
                             </span>
                           </li>
                           <li className="flex items-start gap-2">
-                            <TbCheck className="h-5 w-5 text-green-600 mt-0.5 shrink-0" />
+                            <TbCheck className="h-5 w-5 text-primary mt-0.5 shrink-0" />
                             <span className="text-gray-700">
                               Garansi kepuasan pelanggan
                             </span>
                           </li>
                           <li className="flex items-start gap-2">
-                            <TbCheck className="h-5 w-5 text-green-600 mt-0.5 shrink-0" />
+                            <TbCheck className="h-5 w-5 text-primary mt-0.5 shrink-0" />
                             <span className="text-gray-700">
                               Komunikasi yang responsif
                             </span>
                           </li>
                           <li className="flex items-start gap-2">
-                            <TbCheck className="h-5 w-5 text-green-600 mt-0.5 shrink-0" />
+                            <TbCheck className="h-5 w-5 text-primary mt-0.5 shrink-0" />
                             <span className="text-gray-700">
                               Revisi sesuai kesepakatan
                             </span>
@@ -404,7 +405,7 @@ const ServiceDetailPage = () => {
 
                       <div className="grid grid-cols-2 gap-4 mt-4">
                         <div className="text-center p-4 bg-green-50 rounded-lg border border-green-200">
-                          <p className="text-2xl font-semibold text-green-600 mb-1">
+                          <p className="text-2xl font-semibold text-primary mb-1">
                             {service.seller.totalOrdersCompleted}
                           </p>
                           <p className="text-xs text-gray-600">
@@ -412,7 +413,7 @@ const ServiceDetailPage = () => {
                           </p>
                         </div>
                         <div className="text-center p-4 bg-green-50 rounded-lg border border-green-200">
-                          <p className="text-2xl font-semibold text-green-600 mb-1">
+                          <p className="text-2xl font-semibold text-primary mb-1">
                             {service.seller.totalReviews}
                           </p>
                           <p className="text-xs text-gray-600">Total Ulasan</p>
@@ -521,11 +522,11 @@ const ServiceDetailPage = () => {
                 )}
 
                 {/* Order Card */}
-                <Card className="border-2 border-green-100">
+                <Card className="border-2 border-primary">
                   <CardContent className="p-6">
                     <div className="mb-6">
                       <p className="text-sm text-gray-500 mb-1">Mulai dari</p>
-                      <p className="text-3xl font-bold text-green-600 mb-1">
+                      <p className="text-3xl font-bold text-primary mb-1">
                         Rp {Number(service.price).toLocaleString("id-ID")}
                       </p>
                     </div>
@@ -554,7 +555,7 @@ const ServiceDetailPage = () => {
 
                     <Button
                       onClick={handleOrder}
-                      className="w-full bg-green-600 hover:bg-green-700 mb-3"
+                      className="w-full mb-2"
                       size="lg"
                       disabled={isOwner || isInactive}
                     >
@@ -566,6 +567,20 @@ const ServiceDetailPage = () => {
                         : "Pesan Sekarang"}
                     </Button>
 
+                    <Button
+                      onClick={handleOrder}
+                      variant="outline"
+                      className="w-full"
+                      size="lg"
+                      disabled={isOwner || isInactive}
+                    >
+                      <TbMessage className="mr-2" />
+                      {isOwner
+                        ? "Jasa Anda Sendiri"
+                        : isInactive
+                        ? "Jasa Tidak Tersedia"
+                        : "Chat Penyedia"}
+                    </Button>
                     {!isAuthenticated && (
                       <p className="text-xs text-center text-gray-500">
                         Login untuk melakukan pemesanan
@@ -576,7 +591,7 @@ const ServiceDetailPage = () => {
 
                     <div className="space-y-4">
                       <div className="flex items-center gap-3">
-                        <TbShield className="h-5 w-5 text-green-600 shrink-0" />
+                        <TbShield className="h-5 w-5 text-primary shrink-0" />
                         <div className="flex-1">
                           <p className="text-sm font-medium">Pembayaran Aman</p>
                           <p className="text-xs text-gray-500">
@@ -585,7 +600,7 @@ const ServiceDetailPage = () => {
                         </div>
                       </div>
                       <div className="flex items-center gap-3">
-                        <TbBadgeCc className="h-5 w-5 text-green-600 shrink-0" />
+                        <TbBadgeCc className="h-5 w-5 text-primary shrink-0" />
                         <div className="flex-1">
                           <p className="text-sm font-medium">
                             Penyedia Terverifikasi
@@ -596,7 +611,7 @@ const ServiceDetailPage = () => {
                         </div>
                       </div>
                       <div className="flex items-center gap-3">
-                        <TbMessageCircle className="h-5 w-5 text-green-600 shrink-0" />
+                        <TbMessageCircle className="h-5 w-5 text-primary shrink-0" />
                         <div className="flex-1">
                           <p className="text-sm font-medium">Dukungan 24/7</p>
                           <p className="text-xs text-gray-500">
