@@ -1,7 +1,7 @@
 "use client";
 
-import React, { createContext, useContext, useState, useEffect } from "react";
-import { useRouter } from "next/navigation";
+import React, { createContext, useContext, useState, useEffect, useCallback } from "react";
+import { useRouter, usePathname } from "next/navigation";
 
 interface User {
   id: string;
@@ -32,15 +32,21 @@ interface AuthContextType {
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5500/api";
+const API_URL = process.env.NEXT_PUBLIC_API_URL || "";
+
+// Validate API_URL is set
+if (!API_URL && typeof window !== "undefined") {
+  console.error("NEXT_PUBLIC_API_URL is not set! Please check your environment variables.");
+}
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
   const router = useRouter();
+  const pathname = usePathname();
 
   // Fetch user profile
-  const fetchUserProfile = async (token: string) => {
+  const fetchUserProfile = useCallback(async (token: string) => {
     try {
       const response = await fetch(`${API_URL}/users/profile`, {
         headers: {
@@ -61,7 +67,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       setUser(null);
       return null;
     }
-  };
+  }, []);
 
   // Refresh user data
   const refreshUser = async () => {
@@ -71,7 +77,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
   };
 
-  // Check authentication on mount
+  // Check authentication on mount and when storage changes
   useEffect(() => {
     const initAuth = async () => {
       try {
@@ -79,6 +85,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
         if (token) {
           await fetchUserProfile(token);
+        } else {
+          setUser(null);
         }
       } catch (error) {
         console.error("Auth initialization error:", error);
@@ -88,10 +96,65 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     };
 
     initAuth();
-  }, []);
+
+    // Listen for storage changes (e.g., when token is set after OAuth redirect)
+    const handleStorageChange = (e: StorageEvent) => {
+      if (e.key === "access_token") {
+        if (e.newValue) {
+          fetchUserProfile(e.newValue);
+        } else {
+          setUser(null);
+        }
+      }
+    };
+
+    // Listen for custom event when token is set in same window
+    const handleTokenSet = () => {
+      const token = localStorage.getItem("access_token");
+      if (token) {
+        // Add a small delay to ensure localStorage is updated
+        setTimeout(() => {
+          fetchUserProfile(token);
+        }, 50);
+      }
+    };
+
+    window.addEventListener("storage", handleStorageChange);
+    window.addEventListener("tokenSet", handleTokenSet);
+
+    // Also check token when component becomes visible (handles redirect case)
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === "visible") {
+        const token = localStorage.getItem("access_token");
+        if (token) {
+          fetchUserProfile(token);
+        }
+      }
+    };
+
+    document.addEventListener("visibilitychange", handleVisibilityChange);
+
+    return () => {
+      window.removeEventListener("storage", handleStorageChange);
+      window.removeEventListener("tokenSet", handleTokenSet);
+      document.removeEventListener("visibilitychange", handleVisibilityChange);
+    };
+  }, [fetchUserProfile]);
+
+  useEffect(() => {
+    const token = localStorage.getItem("access_token");
+    if (token && !user) {
+      fetchUserProfile(token);
+    }
+  }, [pathname, user, fetchUserProfile]);
 
   // Login with Google
   const login = () => {
+    if (!API_URL) {
+      console.error("API_URL is not configured. Cannot redirect to Google OAuth.");
+      alert("Configuration error: API URL is not set. Please contact support.");
+      return;
+    }
     window.location.href = `${API_URL}/auth/google`;
   };
 
@@ -127,7 +190,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
       // Redirect to seller dashboard
       router.push("/seller/dashboard");
-    } catch (error: any) {
+    } catch (error) {
       console.error("Activate seller error:", error);
       throw error;
     }
