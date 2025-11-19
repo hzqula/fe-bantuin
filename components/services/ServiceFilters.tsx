@@ -116,8 +116,8 @@ const ServiceFilters = ({ onFilterChange, onSearch }: ServiceFiltersProps) => {
           <Slider
             value={priceRange}
             onValueChange={handlePriceRangeChange}
-            max={5000000}
-            step={100000}
+            max={1000000}
+            step={10000}
             className="mb-2"
           />
           <div className="flex items-center justify-between text-sm text-gray-600">
