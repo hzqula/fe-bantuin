@@ -5,14 +5,13 @@ import { useRouter } from "next/navigation";
 import Image from "next/image";
 import Link from "next/link";
 import { useAuth } from "@/contexts/AuthContext";
-import SellerLayout from "@/components/layouts/SellerLayout";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import BuyerLayout from "@/components/layouts/BuyerLayout";
+import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
   TbSearch,
-  TbFilter,
   TbEye,
   TbPackage,
   TbClock,
@@ -33,16 +32,15 @@ interface Order {
     title: string;
     category: string;
     images: string[];
-  };
-  buyer: {
-    fullName: string;
-    email: string;
-    profilePicture?: string;
+    seller: {
+      fullName: string;
+      email: string;
+    };
   };
 }
 
-const SellerOrdersPage = () => {
-  const { user, loading: authLoading, isAuthenticated } = useAuth();
+const BuyerOrdersPage = () => {
+  const { loading: authLoading, isAuthenticated } = useAuth();
   const router = useRouter();
   const [orders, setOrders] = useState<Order[]>([]);
   const [loading, setLoading] = useState(true);
@@ -53,19 +51,16 @@ const SellerOrdersPage = () => {
     if (!authLoading) {
       if (!isAuthenticated) {
         router.push("/auth/login");
-      } else if (!user?.isSeller) {
-        router.push("/seller/activate");
       } else {
         fetchOrders();
       }
     }
-  }, [authLoading, isAuthenticated, user, router]);
+  }, [authLoading, isAuthenticated, router]);
 
   const fetchOrders = async () => {
     try {
       const token = localStorage.getItem("access_token");
-      // Fetch orders where current user is the seller (worker)
-      const response = await fetch("/api/orders?role=worker&limit=100", {
+      const response = await fetch("/api/orders?role=buyer&limit=100", {
         headers: { Authorization: `Bearer ${token}` },
       });
       const data = await response.json();
@@ -87,7 +82,6 @@ const SellerOrdersPage = () => {
     }).format(price);
   };
 
-  // Helper untuk Badge Status yang konsisten
   const getStatusBadge = (status: string) => {
     const statusConfig: Record<
       string,
@@ -106,7 +100,7 @@ const SellerOrdersPage = () => {
         icon: TbClock,
       },
       PAID_ESCROW: {
-        label: "Perlu Dikerjakan",
+        label: "Menunggu Pengerjaan",
         variant: "default",
         className: "bg-blue-600 text-white border-blue-600",
         icon: TbPackage,
@@ -118,13 +112,13 @@ const SellerOrdersPage = () => {
         icon: TbLoader,
       },
       DELIVERED: {
-        label: "Menunggu Review",
+        label: "Menunggu Review Anda",
         variant: "secondary",
         className: "bg-purple-100 text-purple-700 border-purple-200",
         icon: TbEye,
       },
       REVISION: {
-        label: "Revisi Diminta",
+        label: "Sedang Direvisi",
         variant: "destructive",
         className: "bg-orange-100 text-orange-700 border-orange-200",
         icon: TbLoader,
@@ -160,7 +154,9 @@ const SellerOrdersPage = () => {
   const filteredOrders = orders.filter((order) => {
     const matchesSearch =
       order.service.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      order.buyer.fullName.toLowerCase().includes(searchQuery.toLowerCase());
+      order.service.seller?.fullName
+        .toLowerCase()
+        .includes(searchQuery.toLowerCase());
 
     const matchesStatus =
       statusFilter === "ALL" ||
@@ -176,38 +172,38 @@ const SellerOrdersPage = () => {
 
   if (authLoading || loading) {
     return (
-      <SellerLayout>
+      <BuyerLayout>
         <div className="flex items-center justify-center min-h-[60vh]">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
         </div>
-      </SellerLayout>
+      </BuyerLayout>
     );
   }
 
   return (
-    <SellerLayout>
+    <BuyerLayout>
       <div className="space-y-6">
         {/* Header */}
         <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
           <div>
             <h1 className="text-2xl font-bold text-foreground mb-1">
-              Daftar Pesanan Masuk
+              Pesanan Saya
             </h1>
             <p className="text-muted-foreground text-sm">
-              Kelola pesanan dan pantau perkembangan pekerjaan Anda
+              Pantau status pesanan dan riwayat transaksi Anda
             </p>
           </div>
         </div>
 
         {/* Filters & Content */}
-        <Card className="border-none p-0 shadow-none">
-          <CardHeader className="pb-4 px-0">
+        <Card>
+          <CardHeader className="pb-4">
             <div className="flex flex-col md:flex-row gap-4 justify-between">
               {/* Search */}
               <div className="relative w-full md:w-96">
                 <TbSearch className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                 <Input
-                  placeholder="Cari nama layanan atau pembeli..."
+                  placeholder="Cari layanan atau penyedia..."
                   className="pl-9"
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
@@ -234,7 +230,7 @@ const SellerOrdersPage = () => {
                     statusFilter === "ACTIVE" ? "bg-blue-600 text-white" : ""
                   }
                 >
-                  Aktif
+                  Berjalan
                 </Button>
                 <Button
                   variant={statusFilter === "COMPLETED" ? "default" : "outline"}
@@ -262,7 +258,7 @@ const SellerOrdersPage = () => {
             </div>
           </CardHeader>
 
-          <CardContent className="p-0">
+          <CardContent>
             {filteredOrders.length === 0 ? (
               <div className="text-center py-12">
                 <TbPackage className="mx-auto h-12 w-12 text-muted-foreground/50 mb-3" />
@@ -270,8 +266,11 @@ const SellerOrdersPage = () => {
                   Belum ada pesanan
                 </h3>
                 <p className="text-muted-foreground">
-                  Pesanan yang masuk akan tampil di sini.
+                  Jelajahi layanan dan mulai buat pesanan pertamamu.
                 </p>
+                <Link href="/services">
+                  <Button className="mt-4">Cari Jasa</Button>
+                </Link>
               </div>
             ) : (
               <div className="relative w-full overflow-auto">
@@ -282,7 +281,7 @@ const SellerOrdersPage = () => {
                         Layanan
                       </th>
                       <th className="h-12 px-4 text-left align-middle font-medium text-muted-foreground">
-                        Pembeli
+                        Penyedia
                       </th>
                       <th className="h-12 px-4 text-left align-middle font-medium text-muted-foreground">
                         Deadline
@@ -333,10 +332,10 @@ const SellerOrdersPage = () => {
                         <td className="p-4 align-middle">
                           <div className="flex flex-col">
                             <span className="text-foreground font-medium">
-                              {order.buyer.fullName}
+                              {order.service.seller?.fullName || "Unknown"}
                             </span>
                             <span className="text-xs text-muted-foreground">
-                              {order.buyer.email}
+                              {order.service.seller?.email}
                             </span>
                           </div>
                         </td>
@@ -359,7 +358,7 @@ const SellerOrdersPage = () => {
                           {formatPrice(order.price)}
                         </td>
                         <td className="p-4 align-middle text-right">
-                          <Link href={`/seller/orders/${order.id}`}>
+                          <Link href={`/buyer/orders/${order.id}`}>
                             <Button
                               size="sm"
                               variant="outline"
@@ -378,8 +377,8 @@ const SellerOrdersPage = () => {
           </CardContent>
         </Card>
       </div>
-    </SellerLayout>
+    </BuyerLayout>
   );
 };
 
-export default SellerOrdersPage;
+export default BuyerOrdersPage;
