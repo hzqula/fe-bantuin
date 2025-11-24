@@ -17,9 +17,7 @@ import { Separator } from "@/components/ui/separator";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import {
   TbDashboard,
-  TbPackage,
   TbShoppingCart,
-  TbChartBar,
   TbSettings,
   TbLogout,
   TbMenu2,
@@ -28,7 +26,7 @@ import {
 } from "react-icons/tb";
 import Logo from "@/public/logo.png";
 
-interface SellerLayoutProps {
+interface BuyerLayoutProps {
   children: React.ReactNode;
 }
 
@@ -38,17 +36,15 @@ interface MenuItem {
   href: string;
 }
 
-const SellerLayout = ({ children }: SellerLayoutProps) => {
+const BuyerLayout = ({ children }: BuyerLayoutProps) => {
   const { user, logout } = useAuth();
   const pathname = usePathname();
   const [sidebarOpen, setSidebarOpen] = useState(false);
 
   const menuItems: MenuItem[] = [
-    { icon: TbDashboard, label: "Dashboard", href: "/seller/dashboard" },
-    { icon: TbPackage, label: "Jasa Saya", href: "/seller/services" },
-    { icon: TbShoppingCart, label: "Pesanan", href: "/seller/orders" },
-    { icon: TbChartBar, label: "Statistik", href: "/seller/stats" },
-    { icon: TbSettings, label: "Pengaturan", href: "/seller/settings" },
+    { icon: TbDashboard, label: "Dashboard", href: "/buyer/dashboard" },
+    { icon: TbShoppingCart, label: "Pesanan Saya", href: "/buyer/orders" },
+    { icon: TbSettings, label: "Pengaturan", href: "/buyer/settings" },
   ];
 
   const isActive = (href: string) => pathname === href;
@@ -62,14 +58,12 @@ const SellerLayout = ({ children }: SellerLayoutProps) => {
       .slice(0, 2);
   };
 
-  // Helper untuk label Breadcrumb Seller
+  // Helper untuk label Breadcrumb
   const getBreadcrumbLabel = (segment: string) => {
     const labels: Record<string, string> = {
-      seller: "Penyedia", // Tidak tampil karena di-skip
+      buyer: "Pembeli", // Tidak akan tampil karena di-skip
       dashboard: "Dashboard",
-      services: "Jasa Saya",
       orders: "Pesanan",
-      stats: "Statistik",
       settings: "Pengaturan",
     };
     // Jika segment adalah ID (panjang > 20), tampilkan "Detail"
@@ -94,8 +88,8 @@ const SellerLayout = ({ children }: SellerLayoutProps) => {
             </Link>
           </li>
           {segments.map((segment, index) => {
-            // UPDATE: Skip segment 'seller'
-            if (segment === "seller") return null;
+            // UPDATE: Skip segment 'buyer' agar tidak muncul di breadcrumb
+            if (segment === "buyer") return null;
 
             const path = `/${segments.slice(0, index + 1).join("/")}`;
             const isLast = index === segments.length - 1;
@@ -199,7 +193,7 @@ const SellerLayout = ({ children }: SellerLayoutProps) => {
       <Sheet open={sidebarOpen} onOpenChange={setSidebarOpen}>
         <SheetContent side="left" className="p-0 w-64">
           <SheetHeader className="sr-only">
-            <SheetTitle>Menu Navigasi</SheetTitle>
+            <SheetTitle>Menu Pembeli</SheetTitle>
           </SheetHeader>
           <SidebarContent onItemClick={() => setSidebarOpen(false)} />
         </SheetContent>
@@ -207,10 +201,9 @@ const SellerLayout = ({ children }: SellerLayoutProps) => {
 
       {/* Main Content Area */}
       <div className="flex-1 flex flex-col overflow-hidden">
-        {/* Top Header */}
         <header className="shrink-0 bg-card border-b">
           <div className="flex items-center justify-between h-16 px-4 sm:px-6 lg:px-8">
-            {/* Mobile Menu Button */}
+            {/* Mobile Toggle */}
             <Button
               variant="ghost"
               size="icon"
@@ -229,14 +222,13 @@ const SellerLayout = ({ children }: SellerLayoutProps) => {
               </h1>
             </div>
 
-            {/* Desktop: Breadcrumb */}
+            {/* Desktop Breadcrumb */}
             <div className="hidden lg:block">
               <Breadcrumbs />
             </div>
 
-            {/* Right Side */}
+            {/* User Profile */}
             <div className="flex items-center gap-2">
-              {/* Desktop: User Avatar */}
               <div className="hidden lg:flex items-center gap-2">
                 <Avatar className="h-8 w-8">
                   <AvatarImage
@@ -247,12 +239,12 @@ const SellerLayout = ({ children }: SellerLayoutProps) => {
                     {user?.fullName ? getInitials(user.fullName) : "U"}
                   </AvatarFallback>
                 </Avatar>
+                <span className="text-sm font-medium">{user?.fullName}</span>
               </div>
             </div>
           </div>
         </header>
 
-        {/* Page Content */}
         <main className="flex-1 overflow-y-auto">
           <div className="py-6 px-4 sm:px-6 lg:px-8">{children}</div>
         </main>
@@ -261,4 +253,4 @@ const SellerLayout = ({ children }: SellerLayoutProps) => {
   );
 };
 
-export default SellerLayout;
+export default BuyerLayout;
