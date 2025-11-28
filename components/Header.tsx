@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useRef, useEffect } from "react";
 import { Button } from "./ui/button";
 import {
   DropdownMenu,
@@ -11,26 +11,46 @@ import {
   DropdownMenuTrigger,
 } from "./ui/dropdown-menu";
 import { FcGoogle } from "react-icons/fc";
-import { TbDashboard, TbTools } from "react-icons/tb";
+import { TbTools, TbDashboard, TbMail } from "react-icons/tb";
 import { HiMenu, HiX } from "react-icons/hi";
-import { IoLogOut, IoSettingsOutline } from "react-icons/io5";
+import { IoLogOut } from "react-icons/io5";
 import { FiUser } from "react-icons/fi";
 import Link from "next/link";
 import Image from "next/image";
 import Logo from "@/public/logo.svg";
 import { useAuth } from "@/contexts/AuthContext";
 import { Bell } from "lucide-react";
-
-// Import Baru
 import NotificationDropdown from "@/components/notifications/NotificationDropdown";
+import InboxDropdown from "@/components/chat/InboxDropdown"; // <--- Import Baru
+import { useChat } from "@/contexts/ChatContext";
+import { ChatInboxList } from "./chat/ChatInboxList";
 
 const Header = () => {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const { user, isAuthenticated, login, logout, loading } = useAuth();
 
+  // Ambil unreadCount dari context
+  const { isInboxOpen, toggleInbox, unreadCount } = useChat();
+
+  // Ref untuk mendeteksi klik di luar inbox
+  const inboxRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (
+        inboxRef.current &&
+        !inboxRef.current.contains(event.target as Node)
+      ) {
+        // Jangan tutup jika tombol toggle yang diklik (ditangani oleh toggleInbox)
+      }
+    };
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
+
   return (
     <header className="w-full sticky top-0 bg-white z-50 border-b border-b-accent">
-      <div className="h-16 md:h-20 lg:h-24 flex px-4 sm:px-6 md:px-12 lg:px-24 xl:px-48 items-center justify-between">
+      <div className="h-16 md:h-20 lg:h-24 flex px-4 sm:px-6 md:px-12 lg:px-24 xl:px-48 items-center justify-between relative">
         {/* Logo */}
         <div className="flex items-center gap-2">
           <Image
@@ -73,27 +93,28 @@ const Header = () => {
           </ul>
         </nav>
 
-        {/* Desktop Actions */}
-        <div className="hidden md:flex items-center gap-4">
+        {/* Desktop Action Buttons */}
+        <div className="hidden md:flex items-center gap-4" ref={inboxRef}>
           {loading ? (
             <div className="animate-pulse flex gap-2">
               <div className="h-10 w-32 bg-gray-200 rounded"></div>
-              <div className="h-10 w-24 bg-gray-200 rounded"></div>
             </div>
           ) : isAuthenticated && user ? (
             <>
               {/* Notifikasi Dropdown (Desktop Only) */}
               <NotificationDropdown />
 
+              <InboxDropdown />
+
               <Button className="text-sm">
                 <TbTools className="text-white" />
                 <Link href="/seller/dashboard">Jadi Penyedia</Link>
               </Button>
 
-              {/* User Dropdown Menu */}
+              {/* User Dropdown */}
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
-                  <button className="rounded-full focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2">
+                  <button className="rounded-full focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2 ml-2 transition-transform active:scale-95">
                     {user.profilePicture ? (
                       <Image
                         src={user.profilePicture}
@@ -121,8 +142,6 @@ const Header = () => {
                     </div>
                   </DropdownMenuLabel>
                   <DropdownMenuSeparator />
-
-                  {/* GANTI INI: Dashboard link */}
                   <DropdownMenuItem className="cursor-pointer" asChild>
                     <Link
                       href="/buyer/dashboard"
@@ -132,20 +151,9 @@ const Header = () => {
                       <span>Dashboard</span>
                     </Link>
                   </DropdownMenuItem>
-
-                  <DropdownMenuItem className="cursor-pointer" asChild>
-                    <Link
-                      href="/buyer/settings"
-                      className="flex items-center w-full"
-                    >
-                      <IoSettingsOutline className="mr-2 h-4 w-4" />
-                      <span>Pengaturan</span>
-                    </Link>
-                  </DropdownMenuItem>
-
                   <DropdownMenuSeparator />
                   <DropdownMenuItem
-                    className="cursor-pointer text-red-600 focus:text-red-600"
+                    className="cursor-pointer text-red-600"
                     onClick={logout}
                   >
                     <IoLogOut className="mr-2 h-4 w-4" />
