@@ -136,6 +136,11 @@ const SellerOrderDetailPage = () => {
     }
   };
 
+
+  const isValidImageUrl = (url: string) => {
+  return url?.startsWith('http://') || url?.startsWith('https://') || url?.startsWith('/');
+};
+
   if (loading || authLoading)
     return (
       <SellerLayout>
@@ -336,21 +341,33 @@ const SellerOrderDetailPage = () => {
                       </p>
                       {log.images?.length > 0 && (
                         <div className="flex gap-2">
-                          {log.images.map((img: string, i: number) => (
-                            <a
-                              href={img}
-                              target="_blank"
-                              key={i}
-                              className="block h-16 w-16 relative rounded overflow-hidden border"
-                            >
-                              <Image
-                                src={img}
-                                alt="Progress"
-                                fill
-                                className="object-cover"
-                              />
-                            </a>
-                          ))}
+                          {log.images.map((img: string, i: number) => {
+                            const isUrlValid = isValidImageUrl(img); // <-- Pengecekan Validasi
+
+                            return (
+                              <a
+                                // Gunakan URL yang valid atau fallback ke '#'
+                                href={isUrlValid ? img : '#'} 
+                                target="_blank"
+                                key={i}
+                                className="block h-16 w-16 relative rounded overflow-hidden border"
+                              >
+                                {isUrlValid ? (
+                                  <Image
+                                    src={img} // HANYA render Image jika URL valid
+                                    alt={`Progress ${i + 1}`}
+                                    fill
+                                    className="object-cover"
+                                  />
+                                ) : (
+                                  // Tampilkan placeholder jika URL tidak valid
+                                  <div className="flex h-full items-center justify-center text-xs text-muted-foreground text-center p-1 bg-red-100/50">
+                                    URL Invalid
+                                  </div>
+                                )}
+                              </a>
+                            );
+                          })}
                         </div>
                       )}
                     </div>
