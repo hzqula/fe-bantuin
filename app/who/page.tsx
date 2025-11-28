@@ -1,12 +1,14 @@
 "use client";
 import { useState, useEffect } from 'react';
 import PublicLayout from "@/components/layouts/PublicLayout";
+import { useRouter } from 'next/navigation';
 
 const Who = () => {
   const [scrollY, setScrollY] = useState(0);
   const [activeValue, setActiveValue] = useState(0);
   const [statsInView, setStatsInView] = useState(false);
   const [counts, setCounts] = useState([0, 0, 0, 0]);
+  const router = useRouter();
 
   useEffect(() => {
     const handleScroll = () => setScrollY(window.scrollY);
@@ -49,7 +51,7 @@ const Who = () => {
     if (!statsInView) return;
 
     const targets = [500, 50, 1200, 4.9];
-    const duration = 1000; // 2 detik
+    const duration = 1000; // 1 detik
     const steps = 60;
     const interval = duration / steps;
 
@@ -358,10 +360,10 @@ const Who = () => {
             </p>
             
             <div className="flex flex-col sm:flex-row gap-4 justify-center pt-8">
-              <button className="group px-10 py-5 bg-white text-primary rounded-2xl font-bold text-lg hover:scale-105 hover:shadow-2xl transition-all duration-300 flex items-center justify-center gap-3">
+              <button onClick={() => router.push('/seller/activate')} className="group px-10 py-5 bg-white text-primary rounded-2xl font-bold text-lg hover:scale-105 hover:shadow-2xl transition-all duration-300 flex items-center justify-center gap-3">
                <span>Daftar Sebagai Penyedia</span>                
               </button>
-              <button className="group px-10 py-5 bg-transparent border-2 border-white text-white rounded-2xl font-bold text-lg hover:bg-white hover:text-primary transition-all duration-300 flex items-center justify-center gap-3">
+              <button onClick={() => router.push('/services')} className="group px-10 py-5 bg-transparent border-2 border-white text-white rounded-2xl font-bold text-lg hover:bg-white hover:text-primary transition-all duration-300 flex items-center justify-center gap-3">
                 <span>Jelajahi Jasa</span>
               </button>
             </div>

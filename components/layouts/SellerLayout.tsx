@@ -25,6 +25,7 @@ import {
   TbMenu2,
   TbHome,
   TbChevronRight,
+  TbWallet,
 } from "react-icons/tb";
 import Logo from "@/public/logo.png";
 
@@ -47,6 +48,7 @@ const SellerLayout = ({ children }: SellerLayoutProps) => {
     { icon: TbDashboard, label: "Dashboard", href: "/seller/dashboard" },
     { icon: TbPackage, label: "Jasa Saya", href: "/seller/services" },
     { icon: TbShoppingCart, label: "Pesanan", href: "/seller/orders" },
+    { icon: TbWallet, label: "Dompet", href: "/seller/wallet" },
     { icon: TbChartBar, label: "Statistik", href: "/seller/stats" },
     { icon: TbSettings, label: "Pengaturan", href: "/seller/settings" },
   ];
