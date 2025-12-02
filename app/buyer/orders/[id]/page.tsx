@@ -33,9 +33,6 @@ import {
   Download,
   ArrowLeft,
   AlertCircle,
-  RefreshCw,
-  Loader2, 
-  X, 
 } from "lucide-react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 
@@ -263,6 +260,7 @@ const BuyerOrderDetailPage = () => {
 
   const maxRevisionsReached = order.revisionCount >= order.maxRevisions;
 
+  // LOGIKA BARU: Tentukan apakah aksi pembayaran harus ditampilkan
   const showPaymentActions = ["DRAFT", "WAITING_PAYMENT"].includes(
     order.status
   );
@@ -376,6 +374,7 @@ const BuyerOrderDetailPage = () => {
                         alt={order.service.title}
                         fill
                         className="object-cover"
+                        sizes="(max-width: 640px) 100vw, 160px"
                       />
                     )}
                   </div>
@@ -415,6 +414,7 @@ const BuyerOrderDetailPage = () => {
                     <PaymentButton orderId={order.id} onSuccess={fetchOrder} />
                   </>
                 )}
+                {/* END LOGIKA PEMBAYARAN */}
 
                 {order.status === "DELIVERED" && (
                   <div className="space-y-2">
