@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, Suspense } from "react";
+import { useState, Suspense, useRef } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useAuth } from "@/contexts/AuthContext";
 import PublicLayout from "@/components/layouts/PublicLayout";
@@ -9,19 +9,19 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
-import { TbFileUpload, TbLoader, TbAlertCircle } from "react-icons/tb";
+import { TbLoader, TbAlertCircle, TbX } from "react-icons/tb";
+import { uploadBuyerOrderPhoto } from "@/lib/upload";
 
 const CreateOrderContent = () => {
   const router = useRouter();
   const searchParams = useSearchParams();
   const serviceId = searchParams.get("serviceId");
-  const { isAuthenticated, loading: authLoading } = useAuth();
+  const { isAuthenticated, loading: authLoading, user } = useAuth();
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const [requirements, setRequirements] = useState("");
-  // Catatan: Untuk attachment, idealnya ada komponen upload file yang return URL
-  // Disini saya buat simulasi array string URL
   const [attachments, setAttachments] = useState<string[]>([]);
-  const [attachmentInput, setAttachmentInput] = useState("");
+  const [uploading, setUploading] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
 
@@ -35,11 +35,32 @@ const CreateOrderContent = () => {
     return null;
   }
 
-  const handleAddAttachment = () => {
-    if (attachmentInput && !attachments.includes(attachmentInput)) {
-      setAttachments([...attachments, attachmentInput]);
-      setAttachmentInput("");
+  const handleFileSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = e.target.files;
+    if (!files || files.length === 0 || !user) return;
+
+    setUploading(true);
+    setError("");
+
+    try {
+      const orderName = `order-${Date.now()}`;
+      const uploadPromises = Array.from(files).map((file) => uploadBuyerOrderPhoto(file, user.fullName, orderName, user.nim));
+
+      const results = await Promise.all(uploadPromises);
+      const newUrls = results.map((result) => result.data.url);
+      setAttachments((prev) => [...prev, ...newUrls]);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Gagal mengupload file");
+    } finally {
+      setUploading(false);
+      if (fileInputRef.current) {
+        fileInputRef.current.value = "";
+      }
     }
+  };
+
+  const handleRemoveAttachment = (index: number) => {
+    setAttachments((prev) => prev.filter((_, i) => i !== index));
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -82,58 +103,43 @@ const CreateOrderContent = () => {
       <div className="container mx-auto px-4 py-8 max-w-2xl">
         <Card>
           <CardHeader>
-            <CardTitle className="text-2xl font-display text-primary">
-              Detail Pesanan
-            </CardTitle>
-            <p className="text-muted-foreground">
-              Jelaskan kebutuhan Anda kepada penyedia jasa secara detail.
-            </p>
+            <CardTitle className="text-2xl font-display text-primary">Detail Pesanan</CardTitle>
+            <p className="text-muted-foreground">Jelaskan kebutuhan Anda kepada penyedia jasa secara detail.</p>
           </CardHeader>
           <CardContent>
             <form onSubmit={handleSubmit} className="space-y-6">
               <div className="space-y-2">
                 <Label htmlFor="requirements">
-                  Kebutuhan Pekerjaan{" "}
-                  <span className="text-destructive">*</span>
+                  Kebutuhan Pekerjaan <span className="text-destructive">*</span>
                 </Label>
-                <Textarea
-                  id="requirements"
-                  placeholder="Contoh: Saya butuh desain logo yang minimalis dengan warna biru..."
-                  value={requirements}
-                  onChange={(e) => setRequirements(e.target.value)}
-                  className="min-h-[150px]"
-                  required
-                />
-                <p className="text-xs text-muted-foreground">
-                  Minimal 20 karakter. Semakin detail semakin baik.
-                </p>
+                <Textarea id="requirements" placeholder="Contoh: Saya butuh desain logo yang minimalis dengan warna biru..." value={requirements} onChange={(e) => setRequirements(e.target.value)} className="min-h-[150px]" required />
+                <p className="text-xs text-muted-foreground">Minimal 20 karakter. Semakin detail semakin baik.</p>
               </div>
 
               <div className="space-y-2">
                 <Label>Lampiran Pendukung (Opsional)</Label>
                 <div className="flex gap-2">
-                  <Input
-                    placeholder="Masukkan URL file (Google Drive/Dropbox)"
-                    value={attachmentInput}
-                    onChange={(e) => setAttachmentInput(e.target.value)}
-                  />
-                  <Button
-                    type="button"
-                    variant="secondary"
-                    onClick={handleAddAttachment}
-                  >
-                    <TbFileUpload className="mr-2" /> Tambah
-                  </Button>
+                  <Input ref={fileInputRef} type="file" multiple accept="image/*,.pdf,.doc,.docx" onChange={handleFileSelect} disabled={uploading} className="flex-1" />
+                  {uploading && (
+                    <div className="flex items-center text-sm text-muted-foreground">
+                      <TbLoader className="animate-spin mr-2" />
+                      Mengupload...
+                    </div>
+                  )}
                 </div>
                 {attachments.length > 0 && (
-                  <ul className="list-disc list-inside text-sm text-gray-600 mt-2">
+                  <div className="space-y-2 mt-2">
                     {attachments.map((url, idx) => (
-                      <li key={idx} className="truncate">
-                        {url}
-                      </li>
+                      <div key={idx} className="flex items-center justify-between text-sm p-2 bg-muted/50 rounded">
+                        <span className="truncate flex-1">{url}</span>
+                        <Button type="button" size="icon-sm" variant="ghost" onClick={() => handleRemoveAttachment(idx)} className="h-6 w-6">
+                          <TbX className="h-4 w-4 text-destructive" />
+                        </Button>
+                      </div>
                     ))}
-                  </ul>
+                  </div>
                 )}
+                <p className="text-xs text-muted-foreground">Upload file pendukung untuk membantu penyedia jasa memahami kebutuhan Anda</p>
               </div>
 
               {error && (
@@ -142,12 +148,7 @@ const CreateOrderContent = () => {
                 </div>
               )}
 
-              <Button
-                type="submit"
-                className="w-full"
-                size="lg"
-                disabled={loading || requirements.length < 20}
-              >
+              <Button type="submit" className="w-full" size="lg" disabled={loading || requirements.length < 20}>
                 {loading ? (
                   <>
                     <TbLoader className="animate-spin mr-2" /> Memproses...

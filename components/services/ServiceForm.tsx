@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useRef } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -21,7 +21,9 @@ import {
   DrawerHeader,
   DrawerTitle,
 } from "@/components/ui/drawer";
-import { TbX } from "react-icons/tb";
+import { TbX, TbLoader } from "react-icons/tb";
+import { uploadServicePhoto } from "@/lib/upload";
+import { useAuth } from "@/contexts/AuthContext";
 
 interface ServiceFormProps {
   open: boolean;
@@ -59,7 +61,10 @@ const ServiceForm = ({
   initialData,
   mode = "create",
 }: ServiceFormProps) => {
+  const { user } = useAuth();
+  const fileInputRef = useRef<HTMLInputElement>(null);
   const [loading, setLoading] = useState(false);
+  const [uploading, setUploading] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [formData, setFormData] = useState<ServiceFormData>({
     title: initialData?.title || "",
@@ -70,7 +75,6 @@ const ServiceForm = ({
     revisions: initialData?.revisions || 1,
     images: initialData?.images || [],
   });
-  const [imageUrl, setImageUrl] = useState("");
 
   const handleChange = (
     field: keyof ServiceFormData,
@@ -82,10 +86,39 @@ const ServiceForm = ({
     }
   };
 
-  const handleAddImage = () => {
-    if (imageUrl && formData.images.length < 5) {
-      handleChange("images", [...formData.images, imageUrl]);
-      setImageUrl("");
+  const handleFileSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = e.target.files;
+    if (!files || files.length === 0 || !user) return;
+
+    if (formData.images.length + files.length > 5) {
+      setErrors((prev) => ({
+        ...prev,
+        images: "Maksimal 5 gambar",
+      }));
+      return;
+    }
+
+    setUploading(true);
+    setErrors((prev) => ({ ...prev, images: "" }));
+
+    try {
+      const uploadPromises = Array.from(files).map((file) =>
+        uploadServicePhoto(file, user.fullName, formData.title || "service", user.nim)
+      );
+
+      const results = await Promise.all(uploadPromises);
+      const newUrls = results.map((result) => result.data.url);
+      handleChange("images", [...formData.images, ...newUrls]);
+    } catch (err: any) {
+      setErrors((prev) => ({
+        ...prev,
+        images: err.message || "Gagal mengupload gambar",
+      }));
+    } finally {
+      setUploading(false);
+      if (fileInputRef.current) {
+        fileInputRef.current.value = "";
+      }
     }
   };
 
@@ -300,18 +333,20 @@ const ServiceForm = ({
               </Label>
               <div className="flex gap-2">
                 <Input
-                  value={imageUrl}
-                  onChange={(e) => setImageUrl(e.target.value)}
-                  placeholder="Masukkan URL gambar"
-                  disabled={formData.images.length >= 5}
+                  ref={fileInputRef}
+                  type="file"
+                  multiple
+                  accept="image/*"
+                  onChange={handleFileSelect}
+                  disabled={formData.images.length >= 5 || uploading}
+                  className="flex-1"
                 />
-                <Button
-                  type="button"
-                  onClick={handleAddImage}
-                  disabled={!imageUrl || formData.images.length >= 5}
-                >
-                  Tambah
-                </Button>
+                {uploading && (
+                  <div className="flex items-center text-sm text-muted-foreground px-2">
+                    <TbLoader className="animate-spin mr-2" />
+                    Mengupload...
+                  </div>
+                )}
               </div>
               {errors.images && (
                 <p className="text-sm text-destructive">{errors.images}</p>
