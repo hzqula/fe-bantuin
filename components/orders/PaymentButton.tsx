@@ -24,7 +24,7 @@ const PaymentButton = ({ orderId, onSuccess }: PaymentButtonProps) => {
   useEffect(() => {
     const snapScriptUrl = "https://app.sandbox.midtrans.com/snap/snap.js";
     // NOTE: Ganti client key sesuai env Anda
-    const clientKey = process.env.NEXT_PUBLIC_MIDTRANS_CLIENT_KEY || "";
+    const clientKey = process.env.NEXT_PUBLIC_MIDTRANS_CLIENT_KEY!;
 
     const scriptId = "midtrans-script";
     let script = document.getElementById(scriptId) as HTMLScriptElement;
