@@ -22,6 +22,18 @@ export function PWAInstallPrompt() {
             return; // Already installed
         }
 
+        // ✨ PERBAIKAN: Cek jika prompt sudah ditampilkan dalam 10 menit terakhir
+        const lastPromptTime = localStorage.getItem('pwa-install-prompt-last-shown');
+        const TEN_MINUTES = 5 * 60 * 1000; // 10 menit dalam millisecond
+
+        if (lastPromptTime) {
+            const timeSinceLastPrompt = Date.now() - parseInt(lastPromptTime);
+            if (timeSinceLastPrompt < TEN_MINUTES) {
+                // Belum 10 menit, jangan tampilkan prompt
+                return;
+            }
+        }
+
         const handleBeforeInstallPrompt = (e: any) => {
             // Prevent the mini-infobar from appearing on mobile
             e.preventDefault();
@@ -29,6 +41,8 @@ export function PWAInstallPrompt() {
             setDeferredPrompt(e);
             // Update UI notify the user they can install the PWA
             setShowPrompt(true);
+            // ✨ Simpan timestamp sekarang
+            localStorage.setItem('pwa-install-prompt-last-shown', Date.now().toString());
         };
 
         window.addEventListener("beforeinstallprompt", handleBeforeInstallPrompt);
@@ -36,11 +50,9 @@ export function PWAInstallPrompt() {
         // For iOS, simple check if it's not standalone to show instructions
         // Note: iOS doesn't support beforeinstallprompt, so we just show it if it's iOS and not standalone
         if (isIosDevice && !isStandalone) {
-            // Ideally trigger this based on user engagement or timer, but for now show it
-            // We can use a different state for iOS instructions if needed, but reusing showPrompt requires care 
-            // as iOS creates manual install flow.
-            // For now, let's just focus on Android/Desktop install prompt event.
             setShowPrompt(true);
+            // ✨ Simpan timestamp untuk iOS juga
+            localStorage.setItem('pwa-install-prompt-last-shown', Date.now().toString());
         }
 
         return () => {
@@ -54,6 +66,9 @@ export function PWAInstallPrompt() {
             // We usually show a drawer telling them to tap "Share" -> "Add to Home Screen"
             // For simplicity reusing the same UI but maybe just show alert or better UI.
             alert("Untuk menginstall di iOS:\n1. Tap tombol Share (Kotak dengan panah)\n2. Pilih 'Add to Home Screen' atau 'Tambah ke Layar Utama'");
+            setShowPrompt(false);
+            // ✨ Simpan timestamp
+            localStorage.setItem('pwa-install-prompt-last-shown', Date.now().toString());
             return;
         }
 
@@ -71,10 +86,14 @@ export function PWAInstallPrompt() {
         // We've used the prompt, and can't use it again, throw it away
         setDeferredPrompt(null);
         setShowPrompt(false);
+        // ✨ Simpan timestamp setelah user memilih
+        localStorage.setItem('pwa-install-prompt-last-shown', Date.now().toString());
     };
 
     const handleDismiss = () => {
         setShowPrompt(false);
+        // ✨ Simpan timestamp saat user tutup prompt
+        localStorage.setItem('pwa-install-prompt-last-shown', Date.now().toString());
     };
 
     if (!showPrompt) {
