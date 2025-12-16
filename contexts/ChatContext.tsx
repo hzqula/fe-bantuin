@@ -234,7 +234,7 @@ export const ChatProvider = ({ children }: { children: React.ReactNode }) => {
       }
     });
 
-    // [BARU] Listener Status Online/Offline
+    // [BARU Listener Status Online/Offline
     newSocket.on(
       "userStatus",
       ({ userId, isOnline }: { userId: string; isOnline: boolean }) => {
