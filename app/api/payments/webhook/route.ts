@@ -11,7 +11,7 @@ export async function POST(request: NextRequest) {
 
     // 2. Teruskan (Forward) data tersebut ke Backend NestJS (Port 5500)
     // Backend URL: http://localhost:5500/api/payments/webhook
-    const backendResponse = await fetch(`${API_URL}`, {
+    const backendResponse = await fetch(`${API_URL}/payments/webhook`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",

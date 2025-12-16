@@ -6,6 +6,10 @@ import { useAuth } from "@/contexts/AuthContext";
 import SellerLayout from "@/components/layouts/SellerLayout";
 import PayoutAccountForm from "@/components/wallet/PayoutAccountForm";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+  formatNumberWithSeparator, 
+  parseNumberFromFormattedString,
+} from '@/lib/utils';
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
 import { Input } from "@/components/ui/input";
@@ -420,15 +424,22 @@ const SellerWalletPage = () => {
                     </span>
                     <Input
                       id="payoutAmount"
-                      type="number"
-                      placeholder="50000"
-                      value={payoutAmount}
-                      onChange={(e) => setPayoutAmount(e.target.value)}
-                      className="pl-12 h-10 text-base font-semibold"
+                      type="text" 
+                      placeholder={formatNumberWithSeparator(50000)} 
+                      value={formatNumberWithSeparator(payoutAmount)}
+                      onChange={(e) => {
+                          
+                          const numericString = parseNumberFromFormattedString(
+                            e.target.value
+                          );
+                          
+                          setPayoutAmount(numericString);
+                      }}
+                      className="pl-12 h-10 text-base font-semibold text-left" 
                     />
                   </div>
                   <p className="text-xs text-muted-foreground">
-                    Minimal penarikan Rp 50.000
+                    Minimal penarikan {formatCurrency(50000)}
                   </p>
                 </div>
                 <Separator />
