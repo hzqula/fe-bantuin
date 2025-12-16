@@ -77,11 +77,6 @@ const Header = () => {
             </li>
             <li>
               <Button variant="link">
-                <Link href="/why">Ngapain di Bantuin?</Link>
-              </Button>
-            </li>
-            <li>
-              <Button variant="link">
                 <Link href="/how">Cara Kerja</Link>
               </Button>
             </li>
@@ -97,9 +92,12 @@ const Header = () => {
           ) : isAuthenticated && user ? (
             <>
               {/* Notifikasi Dropdown (Desktop Only) */}
-              <NotificationDropdown />
+              <div className="flex items-center gap-2">
+                {/* Notifikasi Dropdown (Desktop Only) */}
+                <NotificationDropdown />
 
-              <InboxDropdown />
+                <InboxDropdown />
+              </div>
 
               <Button className="text-sm">
                 <TbTools className="text-white" />
@@ -203,11 +201,6 @@ const Header = () => {
               </li>
               <li>
                 <Button variant="ghost" className="w-full justify-start">
-                  <Link href="/why">Ngapain di Bantuin?</Link>
-                </Button>
-              </li>
-              <li>
-                <Button variant="ghost" className="w-full justify-start">
                   <Link href="/how">Cara Kerja</Link>
                 </Button>
               </li>
@@ -218,12 +211,11 @@ const Header = () => {
                 <>
                   <Button
                     variant="ghost"
-                    className="w-full justify-start"
                     asChild
                     onClick={() => setMobileMenuOpen(false)}
                   >
                     <Link href="/notifications">
-                      <Bell className="mr-2 h-4 w-4" /> Notifikasi
+                      <Bell className="h-4 w-4" /> Notifikasi
                     </Link>
                   </Button>
                   <div className="flex items-center gap-2 px-2 py-2">
