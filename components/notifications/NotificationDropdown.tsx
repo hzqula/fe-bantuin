@@ -21,11 +21,11 @@ import { Badge } from "@/components/ui/badge";
 import {
   DropdownMenu,
   DropdownMenuContent,
-  DropdownMenuLabel,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"; // TAMBAH INI SAJA
 import {
   useNotifications,
   useUnreadCount,
@@ -33,9 +33,8 @@ import {
   useMarkAsRead,
 } from "@/lib/hooks/useNotifications";
 import type { Notification } from "@/app/types/notification";
-import { apiClient } from "@/lib/api-client";
 import useSWR from "swr";
-import { useAuth } from "@/contexts/AuthContext";
+
 
 interface ActivityLog {
   action: string;
@@ -106,49 +105,41 @@ const NotificationItem: React.FC<{ notification: Notification }> = ({
 };
 
 const NotificationDropdown = () => {
-  const { notifications, isLoading, isError } = useNotifications();
+  const { notifications, isLoading } = useNotifications();
   const { unreadCount, isLoadingCount } = useUnreadCount();
   const { markAllAsRead, isMutating } = useMarkAllAsRead();
-  const { user } = useAuth(); // AMBIL USER DARI CONTEXT DI SINI
 
   const handleMarkAll = async (e: React.MouseEvent) => {
     e.preventDefault();
     await markAllAsRead();
   };
+  const hasNotifications = notifications && notifications.length > 0;
 
-  // FETCHER DENGAN TOKEN (PAKAI useCallback supaya stabil)
-  const fetcher = React.useCallback(
-    async (url: string) => {
-      // GANTI DENGAN CARA AMBIL TOKEN KAMU (cek AuthContext kamu)
-      const token = localStorage.getItem('access_token');
-      if (!token) {
-        throw new Error('No token');
-      }
-
-      const res = await fetch(url, {
-        headers: {
-          Authorization: `Bearer ${token}`,
-          'Content-Type': 'application/json',
-        },
-      });
-
-      if (!res.ok) {
-        const error = await res.json();
-        throw new Error(error.message || 'Failed');
-      }
-
-      return res.json();
-    },
-    [user] // dependency user
-  );
+  // FETCHER DENGAN TOKEN DARI LOCALSTORAGE (ini yang dipakai)
+  const fetcher = async (url: string) => {
+    const token = localStorage.getItem('access_token');
+    if (!token) {
+      console.warn('No access_token in localStorage');
+      return { data: [] };
+    }
+    const res = await fetch(url, {
+      headers: {
+        Authorization: `Bearer ${token}`,
+        'Content-Type': 'application/json',
+      },
+    });
+    if (!res.ok) {
+      console.error('Activity fetch failed:', res.status);
+      return { data: [] };
+    }
+    return res.json();
+  };
 
   // FETCH ACTIVITY LOG
   const { data: activityData } = useSWR('/api/activity', fetcher, {
     refreshInterval: 30000,
   });
   const activities: ActivityLog[] = activityData?.data || [];
-
-  const hasNotifications = notifications && notifications.length > 0;
 
   return (
     <DropdownMenu>
@@ -174,100 +165,113 @@ const NotificationDropdown = () => {
       </DropdownMenuTrigger>
 
       <DropdownMenuContent align="end" className="w-96 p-0 overflow-hidden">
-        <div className="flex justify-between items-center px-4 py-3 border-b">
-          <DropdownMenuLabel className="p-0 text-lg font-bold text-primary">
-            Notifikasi & Aktivitas
-          </DropdownMenuLabel>
-          {hasNotifications && (
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={handleMarkAll}
-              disabled={isMutating || unreadCount === 0}
-              className="h-7 text-xs p-1"
-            >
-              {isMutating ? (
-                <Loader2 className="mr-1 h-3 w-3 animate-spin" />
-              ) : (
-                <MailOpen className="mr-1 h-3 w-3" />
+        {/* TAMBAH TABS DI SINI */}
+        <Tabs defaultValue="notifications" className="w-full">
+          <TabsList className="grid w-full grid-cols-2 rounded-none h-11">
+            <TabsTrigger value="notifications" className="text-sm">
+              Notifikasi
+              {unreadCount > 0 && (
+                <Badge variant="destructive" className="ml-2 text-xs px-1">
+                  {unreadCount}
+                </Badge>
               )}
-              Baca Semua
-            </Button>
-          )}
-        </div>
+            </TabsTrigger>
+            <TabsTrigger value="activity" className="text-sm">
+              Aktivitas
+            </TabsTrigger>
+          </TabsList>
 
-        <ScrollArea className="h-[400px] w-full">
-          {/* Loading */}
-          {isLoading && (
-            <div className="text-center py-10">
-              <Loader2 className="mx-auto h-6 w-6 animate-spin text-primary" />
-              <p className="text-sm text-gray-500 mt-2">Memuat...</p>
+          {/* TAB NOTIFIKASI */}
+          <TabsContent value="notifications" className="mt-0">
+            <div className="flex justify-between items-center px-4 py-2 border-b">
+              <p className="text-base font-bold">Notifikasi</p>
+              {hasNotifications && (
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={handleMarkAll}
+                  disabled={isMutating || unreadCount === 0}
+                  className="h-7 text-xs p-1"
+                >
+                  {isMutating ? (
+                    <Loader2 className="mr-1 h-3 w-3 animate-spin" />
+                  ) : (
+                    <MailOpen className="mr-1 h-3 w-3" />
+                  )}
+                  Baca Semua
+                </Button>
+              )}
             </div>
-          )}
 
-          {/* Error */}
-          {isError && (
-            <div className="text-center py-10 text-destructive">
-              Gagal memuat notifikasi.
-            </div>
-          )}
-
-          {/* Push Notifikasi */}
-          {hasNotifications && (
-            <>
-              {notifications.map((notif, index) => (
+            <ScrollArea className="h-[320px] w-full">
+              {isLoading && (
+                <div className="text-center py-10">
+                  <Loader2 className="mx-auto h-6 w-6 animate-spin text-primary" />
+                  <p className="text-sm text-gray-500 mt-2">Memuat...</p>
+                </div>
+              )}
+              {!isLoading && notifications?.length === 0 && (
+                <div className="text-center py-12 text-gray-500">
+                  <p className="text-sm">Tidak ada notifikasi saat ini.</p>
+                </div>
+              )}
+              {notifications?.map((notif, index) => (
                 <React.Fragment key={notif.id}>
                   <NotificationItem notification={notif} />
                   {index < notifications.length - 1 && <DropdownMenuSeparator className="m-0" />}
                 </React.Fragment>
               ))}
-              <DropdownMenuSeparator />
-            </>
-          )}
+            </ScrollArea>
+          </TabsContent>
 
-          {/* Riwayat Aktivitas */}
-          <div className="px-4 py-2 bg-gray-50">
-            <p className="text-sm font-semibold text-gray-700">Riwayat Aktivitas</p>
-          </div>
-
-          {activities.length === 0 ? (
-            <div className="text-center py-6 text-gray-500 text-sm">
-              Belum ada aktivitas
+          {/* TAB AKTIVITAS */}
+          <TabsContent value="activity" className="mt-0">
+            <div className="px-4 py-2 border-b bg-gray-50">
+              <p className="text-base font-bold">Riwayat Aktivitas</p>
             </div>
-          ) : (
-            activities.slice(0, 10).map((log, index) => (
-              <div
-                key={`activity-${index}`}
-                className="px-4 py-3 hover:bg-gray-50 flex gap-3 border-b last:border-0"
-              >
-                <div className="mt-1">
-                  <div className="w-8 h-8 bg-green-500 rounded-full flex items-center justify-center">
-                    <ArrowRight className="w-5 h-5 text-white" />
-                  </div>
-                </div>
-                <div className="flex-1">
-                  <p className="text-sm font-medium text-gray-900 capitalize">
-                    {log.action.replace(/_/g, ' ')}
-                  </p>
-                  <p className="text-xs text-gray-600 mt-1">{log.details}</p>
-                  <p className="text-xs text-gray-500 mt-1">
-                    {log.device || 'Perangkat tidak diketahui'} •{' '}
-                    {formatDistanceToNow(new Date(log.timestamp), {
-                      addSuffix: true,
-                      locale: idLocale,
-                    })}
-                  </p>
-                </div>
-              </div>
-            ))
-          )}
 
-          <div className="p-3 text-center border-t bg-gray-50">
-            <Link href="/notifications" className="text-sm text-primary hover:underline font-medium">
-              Lihat semua notifikasi & riwayat →
-            </Link>
-          </div>
-        </ScrollArea>
+            <ScrollArea className="h-[320px] w-full">
+              {activities.length === 0 ? (
+                <div className="text-center py-12 text-gray-500">
+                  <p className="text-sm">Belum ada aktivitas</p>
+                </div>
+              ) : (
+                activities.slice(0, 15).map((log, index) => (
+                  <div
+                    key={`activity-${index}`}
+                    className="px-4 py-3 hover:bg-gray-50 flex gap-3 border-b last:border-0"
+                  >
+                    <div className="mt-1">
+                      <div className="w-8 h-8 bg-green-500 rounded-full flex items-center justify-center">
+                        <ArrowRight className="w-5 h-5 text-white" />
+                      </div>
+                    </div>
+                    <div className="flex-1">
+                      <p className="text-sm font-medium text-gray-900 capitalize">
+                        {log.action.replace(/_/g, ' ')}
+                      </p>
+                      <p className="text-xs text-gray-600 mt-1">{log.details}</p>
+                      <p className="text-xs text-gray-500 mt-1">
+                        {log.device || 'Perangkat tidak diketahui'} •{' '}
+                        {formatDistanceToNow(new Date(log.timestamp), {
+                          addSuffix: true,
+                          locale: idLocale,
+                        })}
+                      </p>
+                    </div>
+                  </div>
+                ))
+              )}
+            </ScrollArea>
+          </TabsContent>
+        </Tabs>
+
+        {/* Link ke halaman lengkap */}
+        <div className="p-3 text-center border-t bg-gray-50">
+          <Link href="/notifications" className="text-sm text-primary hover:underline font-medium">
+            Lihat semua notifikasi & riwayat →
+          </Link>
+        </div>
       </DropdownMenuContent>
     </DropdownMenu>
   );
