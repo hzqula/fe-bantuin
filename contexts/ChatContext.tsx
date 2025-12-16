@@ -7,6 +7,7 @@ import React, {
   useState,
   useCallback,
   useRef,
+  useMemo,
 } from "react";
 import { io, Socket } from "socket.io-client";
 import { useAuth } from "./AuthContext";
@@ -112,6 +113,7 @@ export const ChatProvider = ({ children }: { children: React.ReactNode }) => {
     {}
   );
   const activeConversationRef = useRef(activeConversation);
+  const [renderTrigger, setRenderTrigger] = useState(0); // [FIX] Force render state
   const [onlineUsers, setOnlineUsers] = useState<Set<string>>(new Set());
   const [typingUsers, setTypingUsers] = useState<Record<string, boolean>>({});
 
@@ -212,17 +214,28 @@ export const ChatProvider = ({ children }: { children: React.ReactNode }) => {
     const token = localStorage.getItem("access_token");
     if (!token) return;
 
+    // [FIX] Deteksi protokol secure (https/wss)
+    const isSecure = SOCKET_URL.startsWith("https");
+
     const newSocket = io(SOCKET_URL, {
+      transports: ["websocket"], // [FIX] Wajib websocket only untuk hemat request ngrok
       auth: { token },
-      transports: ["polling", "websocket"], // Polling first, then upgrade to websocket (better for ngrok)
-      reconnection: true,
-      reconnectionAttempts: 5,
-      reconnectionDelay: 1000,
-      timeout: 20000, // Increase timeout for ngrok latency
+      withCredentials: true,
+      reconnectionAttempts: 10,
+      reconnectionDelay: 5000, // Delay 5s agar tidak spam retry
+      timeout: 45000, // Timeout panjang untuk latency
+      secure: isSecure,
+      rejectUnauthorized: false,
+      forceNew: true,
+      extraHeaders: {
+        "ngrok-skip-browser-warning": "true", // Bypass warning page saat handshake
+      },
     });
 
     newSocket.on("connect", () => {
-      console.log("✅ Socket Connected");
+      console.log("✅ [Frontend] Socket Connected to:", SOCKET_URL);
+      console.log("   Socket ID:", newSocket.id);
+      console.log("   Transport:", newSocket.io.engine.transport.name);
       setIsConnected(true);
       if (
         activeConversationRef.current &&
@@ -232,7 +245,7 @@ export const ChatProvider = ({ children }: { children: React.ReactNode }) => {
       }
     });
 
-    // [BARU] Listener Status Online/Offline
+    // [BARU Listener Status Online/Offline
     newSocket.on(
       "userStatus",
       ({ userId, isOnline }: { userId: string; isOnline: boolean }) => {
@@ -265,38 +278,65 @@ export const ChatProvider = ({ children }: { children: React.ReactNode }) => {
     newSocket.on("disconnect", () => setIsConnected(false));
 
     newSocket.on("newMessage", (message: Message) => {
-      const chatId = message.conversationId;
-
-      setMessagesCache((prevCache) => {
-        const currentMessages = prevCache[chatId] || [];
-        if (currentMessages.some((m) => m.id === message.id)) return prevCache;
-        const filtered = currentMessages.filter(
-          (m) => !(m.id.startsWith("temp-") && m.content === message.content)
-        );
-        return { ...prevCache, [chatId]: [...filtered, message] };
+      console.log("📬 [Frontend] Received newMessage:", {
+        id: message.id,
+        from: message.sender.fullName,
+        conversationId: message.conversationId,
+        content: message.content.substring(0, 50),
       });
 
+      const chatId = message.conversationId;
+
+      // 1. Update messages cache - FORCE NEW OBJECT untuk trigger re-render
+      setMessagesCache((prevCache) => {
+        const currentMessages = prevCache[chatId] || [];
+
+        // Skip jika message sudah ada (deduplication)
+        if (currentMessages.some((m) => m.id === message.id)) {
+          console.log("   ⚠️ Message already exists, skipping");
+          return prevCache;
+        }
+
+        // Remove temporary message dengan content yang sama
+        const filtered = currentMessages.filter(
+          (m) => !(m.id.startsWith("temp-") && m.content === message.content && m.senderId === message.senderId)
+        );
+
+        // PENTING: Buat object baru untuk force re-render
+        const updatedMessages = [...filtered, message];
+        console.log(`   ✅ Updated messages cache for ${chatId}, total: ${updatedMessages.length}`);
+
+        // Force render UI jika ini chat yang aktif
+        if (activeConversationRef.current?.id === chatId) {
+          setRenderTrigger(prev => prev + 1);
+        }
+
+        return { ...prevCache, [chatId]: updatedMessages };
+      });
+
+      // 2. Update conversations list
       setConversations((prevConvs) => {
-        // Cari index percakapan ini di list
         const index = prevConvs.findIndex((c) => c.id === chatId);
 
-        // Jika belum ada (chat baru), terpaksa fetch ulang
+        // Jika conversation belum ada di list, fetch ulang
         if (index === -1) {
+          console.log("   ⚠️ Conversation not found, fetching...");
           fetchConversations();
           return prevConvs;
         }
 
-        // Copy array agar immutable
+        // PENTING: Buat array baru untuk force re-render
         const newConvs = [...prevConvs];
-
-        // Hitung unreadCount baru
         const isCurrentChat = activeConversationRef.current?.id === chatId;
+
+        // Hitung unreadCount
         let newUnread = newConvs[index].unreadCount || 0;
         if (!isCurrentChat && message.senderId !== user?.id) {
           newUnread += 1;
+          console.log(`   📬 Unread count increased to ${newUnread}`);
         }
 
-        // Update lastMessage percakapan tersebut
+        // PENTING: Buat object conversation baru
         const updatedConv = {
           ...newConvs[index],
           unreadCount: newUnread,
@@ -304,14 +344,17 @@ export const ChatProvider = ({ children }: { children: React.ReactNode }) => {
             content: message.content,
             senderId: message.senderId,
             createdAt: message.createdAt,
+            sender: message.sender, // Tambahkan sender info
           },
         };
 
-        // Pindahkan ke paling atas (Urutan 0) karena baru aktif
-        newConvs.splice(index, 1); // Hapus dari posisi lama
-        newConvs.unshift(updatedConv); // Masukkan ke atas
+        // Pindahkan ke paling atas
+        newConvs.splice(index, 1);
+        newConvs.unshift(updatedConv);
 
-        // Jika chat sedang dibuka, tandai read di backend
+        console.log(`   ✅ Updated conversations list, moved to top`);
+
+        // Mark as read jika chat sedang dibuka
         if (isCurrentChat && message.senderId !== user?.id) {
           markAsRead(chatId);
         }
@@ -557,9 +600,12 @@ export const ChatProvider = ({ children }: { children: React.ReactNode }) => {
     }
   };
 
-  const activeMessages = activeConversation
-    ? messagesCache[activeConversation.id] || []
-    : [];
+  // [FIX] Tambahkan dependency renderTrigger agar re-calc saat force update
+  const activeMessages = useMemo(() => {
+    return activeConversation
+      ? messagesCache[activeConversation.id] || []
+      : [];
+  }, [activeConversation, messagesCache, renderTrigger]);
 
   return (
     <ChatContext.Provider
