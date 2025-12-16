@@ -1,4 +1,4 @@
-"use client";
+'use client';
 
 import * as React from "react";
 import Link from "next/link";
@@ -13,7 +13,7 @@ import {
   MessageSquare,
   Wallet,
   Star,
-  CheckCircle,
+  ArrowRight,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
@@ -21,7 +21,6 @@ import { Badge } from "@/components/ui/badge";
 import {
   DropdownMenu,
   DropdownMenuContent,
-  DropdownMenuItem,
   DropdownMenuLabel,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
@@ -35,8 +34,17 @@ import {
 } from "@/lib/hooks/useNotifications";
 import type { Notification } from "@/app/types/notification";
 import { apiClient } from "@/lib/api-client";
+import useSWR from "swr";
+import { useAuth } from "@/contexts/AuthContext";
 
-// Helper untuk memilih ikon
+interface ActivityLog {
+  action: string;
+  status: string;
+  details: string;
+  device?: string;
+  timestamp: string;
+}
+
 const getIcon = (type: Notification["type"]) => {
   switch (type) {
     case "ORDER":
@@ -58,8 +66,6 @@ const NotificationItem: React.FC<{ notification: Notification }> = ({
   notification,
 }) => {
   const markAsRead = useMarkAsRead(notification.id);
-
-  // Menggunakan primary/secondary dari globals.css
   const bgColor = notification.isRead
     ? "bg-transparent"
     : "bg-secondary/10 hover:bg-secondary/20";
@@ -100,107 +106,47 @@ const NotificationItem: React.FC<{ notification: Notification }> = ({
 };
 
 const NotificationDropdown = () => {
-  const { notifications, isLoading, isError, refresh } = useNotifications();
+  const { notifications, isLoading, isError } = useNotifications();
   const { unreadCount, isLoadingCount } = useUnreadCount();
   const { markAllAsRead, isMutating } = useMarkAllAsRead();
+  const { user } = useAuth(); // AMBIL USER DARI CONTEXT DI SINI
 
   const handleMarkAll = async (e: React.MouseEvent) => {
     e.preventDefault();
     await markAllAsRead();
   };
 
-  const [permission, setPermission] = React.useState<NotificationPermission>("default");
-  const [isSubscribed, setIsSubscribed] = React.useState(false);
+  // FETCHER DENGAN TOKEN (PAKAI useCallback supaya stabil)
+  const fetcher = React.useCallback(
+    async (url: string) => {
+      // GANTI DENGAN CARA AMBIL TOKEN KAMU (cek AuthContext kamu)
+      const token = localStorage.getItem('access_token');
+      if (!token) {
+        throw new Error('No token');
+      }
 
-  React.useEffect(() => {
-    if ("Notification" in window) {
-      setPermission(Notification.permission);
-    }
-
-    // Check if actually subscribed in SW
-    if ("serviceWorker" in navigator) {
-      navigator.serviceWorker.ready.then(async (registration) => {
-        const sub = await registration.pushManager.getSubscription();
-        setIsSubscribed(!!sub);
-
-        // RESYNC: If we have a subscription, ensure backend has it too (in case of server restart)
-        if (sub) {
-          apiClient.post("/notifications/subscribe", sub)
-            .catch(err => console.error("Failed to resync sub:", err));
-        } else {
-          // AUTO SUBSCRIBE
-          handleSubscribe();
-        }
+      const res = await fetch(url, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+          'Content-Type': 'application/json',
+        },
       });
-    }
-  }, []);
 
-  const handleSubscribe = async () => {
-    if (!("serviceWorker" in navigator) || !("PushManager" in window)) {
-      return;
-    }
-
-    try {
-      const registration = await navigator.serviceWorker.ready;
-      // Request permission immediately
-      const permissionResult = await Notification.requestPermission();
-      setPermission(permissionResult);
-
-      if (permissionResult === 'granted') {
-        function urlBase64ToUint8Array(base64String: string) {
-          const padding = "=".repeat((4 - (base64String.length % 4)) % 4);
-          const base64 = (base64String + padding)
-            .replace(/\-/g, "+")
-            .replace(/_/g, "/");
-
-          const rawData = window.atob(base64);
-          const outputArray = new Uint8Array(rawData.length);
-
-          for (let i = 0; i < rawData.length; ++i) {
-            outputArray[i] = rawData.charCodeAt(i);
-          }
-          return outputArray;
-        }
-
-        const vapidKey = process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY;
-        if (!vapidKey) return;
-
-        const subscription = await registration.pushManager.subscribe({
-          userVisibleOnly: true,
-          applicationServerKey: urlBase64ToUint8Array(vapidKey),
-        });
-
-        // Send to backend
-        try {
-          await apiClient.post("/notifications/subscribe", subscription);
-          setIsSubscribed(true);
-        } catch (error) {
-          console.error("Failed to sync subscription to backend:", error);
-          setIsSubscribed(true);
-        }
+      if (!res.ok) {
+        const error = await res.json();
+        throw new Error(error.message || 'Failed');
       }
-    } catch (error) {
-      console.error("Failed to subscribe:", error);
-    }
-  };
 
-  const handleUnsubscribe = async () => {
-    if (!("serviceWorker" in navigator)) return;
+      return res.json();
+    },
+    [user] // dependency user
+  );
 
-    try {
-      const registration = await navigator.serviceWorker.ready;
-      const subscription = await registration.pushManager.getSubscription();
-      if (subscription) {
-        await subscription.unsubscribe();
-        // Notify backend to remove subscription
-        await apiClient.post("/notifications/unsubscribe", { endpoint: subscription.endpoint })
-          .catch(() => { });
-      }
-      setIsSubscribed(false);
-    } catch (error) {
-      console.error("Failed to unsubscribe:", error);
-    }
-  };
+  // FETCH ACTIVITY LOG
+  const { data: activityData } = useSWR('/api/activity', fetcher, {
+    refreshInterval: 30000,
+  });
+  const activities: ActivityLog[] = activityData?.data || [];
 
   const hasNotifications = notifications && notifications.length > 0;
 
@@ -213,8 +159,6 @@ const NotificationDropdown = () => {
           ) : (
             <Bell className="h-5 w-5 text-primary" />
           )}
-
-          {/* Badge Count */}
           {unreadCount > 0 && (
             <Badge
               variant="destructive"
@@ -229,10 +173,11 @@ const NotificationDropdown = () => {
         </Button>
       </DropdownMenuTrigger>
 
-      <DropdownMenuContent align="end" className="w-80 p-0 overflow-hidden">
-        <div className="flex justify-between items-center px-4 py-2">
-          <DropdownMenuLabel className="p-0 text-lg font-bold text-primary">Notifikasi</DropdownMenuLabel>
-
+      <DropdownMenuContent align="end" className="w-96 p-0 overflow-hidden">
+        <div className="flex justify-between items-center px-4 py-3 border-b">
+          <DropdownMenuLabel className="p-0 text-lg font-bold text-primary">
+            Notifikasi & Aktivitas
+          </DropdownMenuLabel>
           {hasNotifications && (
             <Button
               variant="ghost"
@@ -250,10 +195,9 @@ const NotificationDropdown = () => {
             </Button>
           )}
         </div>
-        <DropdownMenuSeparator className="m-0" />
 
-        {/* Kontainer Notifikasi (Scrollable) */}
-        <ScrollArea className="h-[300px] w-full">
+        <ScrollArea className="h-[400px] w-full">
+          {/* Loading */}
           {isLoading && (
             <div className="text-center py-10">
               <Loader2 className="mx-auto h-6 w-6 animate-spin text-primary" />
@@ -261,46 +205,69 @@ const NotificationDropdown = () => {
             </div>
           )}
 
+          {/* Error */}
           {isError && (
             <div className="text-center py-10 text-destructive">
               Gagal memuat notifikasi.
             </div>
           )}
 
-          {!isLoading && notifications?.length === 0 && (
-            <div className="text-center py-12 text-gray-500">
-              <CheckCircle className="mx-auto h-8 w-8 text-green-500 mb-2" />
-              <p className="text-sm">Tidak ada notifikasi saat ini.</p>
-            </div>
+          {/* Push Notifikasi */}
+          {hasNotifications && (
+            <>
+              {notifications.map((notif, index) => (
+                <React.Fragment key={notif.id}>
+                  <NotificationItem notification={notif} />
+                  {index < notifications.length - 1 && <DropdownMenuSeparator className="m-0" />}
+                </React.Fragment>
+              ))}
+              <DropdownMenuSeparator />
+            </>
           )}
 
-          {notifications?.map((notif, index) => (
-            <React.Fragment key={notif.id}>
-              <NotificationItem notification={notif} />
-              {index < notifications.length - 1 && <DropdownMenuSeparator className="m-0" />}
-            </React.Fragment>
-          ))}
-        </ScrollArea>
-
-        {/* Footer Actions */}
-        {isSubscribed && (
-          <div className="p-2 border-t mt-auto text-center bg-gray-50 flex flex-col gap-1">
-            <Button
-              variant="link"
-              size="sm"
-              onClick={async () => {
-                try {
-                  await apiClient.post("/notifications/test-push", {});
-                } catch (error) {
-                  console.error("Test push failed", error);
-                }
-              }}
-              className="text-blue-600 text-xs w-full"
-            >
-              Tes Notifikasi
-            </Button>
+          {/* Riwayat Aktivitas */}
+          <div className="px-4 py-2 bg-gray-50">
+            <p className="text-sm font-semibold text-gray-700">Riwayat Aktivitas</p>
           </div>
-        )}
+
+          {activities.length === 0 ? (
+            <div className="text-center py-6 text-gray-500 text-sm">
+              Belum ada aktivitas
+            </div>
+          ) : (
+            activities.slice(0, 10).map((log, index) => (
+              <div
+                key={`activity-${index}`}
+                className="px-4 py-3 hover:bg-gray-50 flex gap-3 border-b last:border-0"
+              >
+                <div className="mt-1">
+                  <div className="w-8 h-8 bg-green-500 rounded-full flex items-center justify-center">
+                    <ArrowRight className="w-5 h-5 text-white" />
+                  </div>
+                </div>
+                <div className="flex-1">
+                  <p className="text-sm font-medium text-gray-900 capitalize">
+                    {log.action.replace(/_/g, ' ')}
+                  </p>
+                  <p className="text-xs text-gray-600 mt-1">{log.details}</p>
+                  <p className="text-xs text-gray-500 mt-1">
+                    {log.device || 'Perangkat tidak diketahui'} •{' '}
+                    {formatDistanceToNow(new Date(log.timestamp), {
+                      addSuffix: true,
+                      locale: idLocale,
+                    })}
+                  </p>
+                </div>
+              </div>
+            ))
+          )}
+
+          <div className="p-3 text-center border-t bg-gray-50">
+            <Link href="/notifications" className="text-sm text-primary hover:underline font-medium">
+              Lihat semua notifikasi & riwayat →
+            </Link>
+          </div>
+        </ScrollArea>
       </DropdownMenuContent>
     </DropdownMenu>
   );
