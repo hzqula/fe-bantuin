@@ -1,6 +1,7 @@
 import type { NextConfig } from "next";
 
 const nextConfig: any = {
+  output: "standalone", // Required for Docker deployment
   typescript: {
     ignoreBuildErrors: true,
   },

@@ -1,0 +1,76 @@
+# Dependencies
+node_modules
+npm-debug.log
+yarn-error.log
+# package-lock.json - NEEDED for npm ci
+yarn.lock
+pnpm-lock.yaml
+
+# Testing
+coverage
+.nyc_output
+__tests__
+*.test.ts
+*.test.tsx
+*.spec.ts
+*.spec.tsx
+
+# Next.js
+.next
+out
+.swc
+
+# IDE
+.idea
+.vscode
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Build
+dist
+build
+*.log
+
+# Environment
+.env
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+
+# Git
+.git
+.gitignore
+.github
+
+# Documentation
+README.md
+*.md
+
+# Docker
+Dockerfile
+.dockerignore
+docker-compose*.yml
+
+# CI/CD
+.gitlab-ci.yml
+.travis.yml
+azure-pipelines.yml
+
+# Misc - Keep config files needed for build
+.eslintrc.json
+.prettierrc
+# tsconfig.json - NEEDED for build
+# next.config.ts - NEEDED for build  
+# postcss.config.mjs - NEEDED for build
+# tailwind.config.js - NEEDED for build
+components.json
+
+# Cache
+.cache
+*.tsbuildinfo
