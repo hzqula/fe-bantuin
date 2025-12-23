@@ -27,6 +27,7 @@ interface User {
   totalReviews: number;
   totalOrdersCompleted: number;
   role: "USER" | "SELLER" | "ADMIN";
+  termsAcceptedAt?: string | Date | null;
 }
 
 interface AuthContextType {
