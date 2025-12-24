@@ -50,6 +50,11 @@ export const metadata: Metadata = {
 
   manifest: "/manifest.json",
 
+  // Google Search Console Verification
+  verification: {
+    google: "f1bd0c7bd2c8e140",
+  },
+
   robots: {
     index: true,
     follow: true,
@@ -66,11 +71,30 @@ export const metadata: Metadata = {
     siteName: "Bantuin",
     locale: "id_ID",
     type: "website",
+    images: [
+      {
+        url: "https://bantuin-campus.me/og-image.png",
+        width: 1200,
+        height: 630,
+        alt: "Bantuin - Marketplace Jasa Mahasiswa",
+      },
+    ],
+  },
+
+  twitter: {
+    card: "summary_large_image",
+    title: "Bantuin - Marketplace Jasa Mahasiswa UIN Suska Riau",
+    description: "Platform marketplace jasa mahasiswa UIN Suska Riau untuk freelance, proyek akademik, dan pekerjaan digital.",
+    images: ["https://bantuin-campus.me/og-image.png"],
   },
 
   alternates: {
     canonical: "https://bantuin-campus.me",
   },
+
+  authors: [{ name: "Bantuin Team" }],
+  creator: "Bantuin",
+  publisher: "Bantuin",
 };
 
 export const viewport: Viewport = {
