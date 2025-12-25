@@ -23,10 +23,8 @@ import {
   TbClock,
   TbWallet,
 } from "react-icons/tb";
+import { Footer } from "@/components/Footer";
 
-/**
- * Page: Cara Kerja Bantuin
- */
 const How = () => {
   return (
     <PublicLayout>
@@ -65,38 +63,6 @@ const How = () => {
                     Jadi Penyedia
                   </Button>
                 </Link>
-              </div>
-            </div>
-          </div>
-        </section>
-
-        {/* Stats Section */}
-        <section className="py-12 bg-white border-b">
-          <div className="container mx-auto px-4">
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-6 max-w-5xl mx-auto">
-              <div className="text-center">
-                <div className="text-3xl md:text-4xl font-bold text-primary mb-2">
-                  1000+
-                </div>
-                <div className="text-sm text-gray-600">Jasa Tersedia</div>
-              </div>
-              <div className="text-center">
-                <div className="text-3xl md:text-4xl font-bold text-primary mb-2">
-                  500+
-                </div>
-                <div className="text-sm text-gray-600">Penyedia Aktif</div>
-              </div>
-              <div className="text-center">
-                <div className="text-3xl md:text-4xl font-bold text-primary mb-2">
-                  5000+
-                </div>
-                <div className="text-sm text-gray-600">Pesanan Selesai</div>
-              </div>
-              <div className="text-center">
-                <div className="text-3xl md:text-4xl font-bold text-primary mb-2">
-                  4.8
-                </div>
-                <div className="text-sm text-gray-600">Rating Rata-rata</div>
               </div>
             </div>
           </div>
@@ -575,6 +541,7 @@ const How = () => {
           </div>
         </section>
       </div>
+      <Footer />
     </PublicLayout>
   );
 };

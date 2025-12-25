@@ -6,7 +6,7 @@ import { ChatProvider } from "@/contexts/ChatContext";
 import { ChatFloatingWindow } from "@/components/chat/ChatFloatingWindow";
 import localFont from "next/font/local";
 import { Toaster } from "@/components/ui/sonner";
-
+import { TermsModal } from "@/components/auth/TermsModal";
 import { ServiceWorkerRegister } from "@/app/components/ServiceWorkerRegister";
 import { PWAInstallPrompt } from "@/components/pwa/PWAInstallPrompt";
 
@@ -118,6 +118,7 @@ export default function RootLayout({
             {children}
             <ChatFloatingWindow />
             <PWAInstallPrompt />
+            <TermsModal />
             <Toaster position="top-right" />
             <ServiceWorkerRegister />
           </ChatProvider>

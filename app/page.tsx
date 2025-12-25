@@ -1,7 +1,6 @@
 "use client";
 
 import { useState, useEffect, Suspense } from "react";
-import Image from "next/image";
 import Link from "next/link";
 import PublicLayout from "@/components/layouts/PublicLayout";
 import Hero from "@/components/Hero";
@@ -10,6 +9,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { TbTrophy, TbStar, TbArrowRight, TbLoader } from "react-icons/tb";
+import { Footer } from "@/components/Footer";
 
 function HomePageContent() {
   const [featuredServices, setFeaturedServices] = useState([]);
@@ -155,6 +155,7 @@ function HomePageContent() {
 
       {/* Call to Action (Sudah ada sebelumnya, bisa disesuaikan) */}
       {/* ... */}
+      <Footer />
     </PublicLayout>
   );
 }

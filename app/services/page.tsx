@@ -30,6 +30,7 @@ import {
   TbAdjustmentsHorizontal,
   TbSearch,
 } from "react-icons/tb";
+import { Footer } from "@/components/Footer";
 
 interface Service {
   id: string;
@@ -332,6 +333,7 @@ const ServicesPage = () => {
           </div>
         </div>
       </div>
+      <Footer />
     </PublicLayout>
   );
 };
