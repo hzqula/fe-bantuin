@@ -74,7 +74,7 @@ function HomePageContent() {
               ))}
             </div>
           ) : (
-            <div className="text-center py-10 text-muted-foreground">
+            <div className="text-center font-bold py-10 text-muted-foreground">
               Belum ada jasa yang ditampilkan.
             </div>
           )}

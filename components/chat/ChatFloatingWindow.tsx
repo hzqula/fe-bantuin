@@ -25,7 +25,7 @@ export const ChatFloatingWindow = () => {
 
   return (
     <div className="fixed z-50 inset-0 md:inset-auto md:bottom-10 md:left-6 flex flex-col items-start justify-end md:justify-start">
-      <div className="w-full h-dvh md:w-[400px] md:h-[500px] md:max-h-[calc(100vh-5rem)] bg-white md:shadow-2xl md:border border-primary/20 rounded-none md:rounded-xl flex flex-col overflow-hidden animate-in slide-in-from-bottom-5 fade-in duration-300">
+      <div className="w-full h-dvh md:w-[400px] md:h-[500px] md:max-h-[calc(100vh-5rem)] bg-white md:shadow-2xl md:border border-primary flex flex-col overflow-hidden animate-in slide-in-from-bottom-5 fade-in duration-300">
         {/* Header */}
         <div className="p-3 px-4 bg-white border-b text-secondary-foreground flex items-center justify-between shrink-0 safe-area-top">
           <div className="flex items-center gap-3 overflow-hidden">

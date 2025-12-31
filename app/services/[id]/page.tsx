@@ -2,34 +2,28 @@
 
 import { useState, useEffect } from "react";
 import { useParams, useRouter } from "next/navigation";
-import Image from "next/image";
+import Link from "next/link";
+import {
+  Star,
+  Clock,
+  CheckCircle2,
+  Share2,
+  ShieldCheck,
+  RefreshCcw,
+  MessageCircle,
+} from "lucide-react";
 import PublicLayout from "@/components/layouts/PublicLayout";
-import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Progress } from "@/components/ui/progress";
 import { useAuth } from "@/contexts/AuthContext";
 import { useChat } from "@/contexts/ChatContext";
-import { ReportUserDialog } from "@/components/report/ReportUserDialog"; // <--- IMPORT INI
+import { ReportUserDialog } from "@/components/report/ReportUserDialog";
+import { CATEGORY_LABELS } from "@/lib/constants";
+import { toast } from "sonner";
 
-import {
-  TbStar,
-  TbClock,
-  TbRefresh,
-  TbShoppingCart,
-  TbEyeOff,
-  TbCheck,
-  TbShield,
-  TbBadgeCc,
-  TbMessageCircle,
-  TbChevronLeft,
-  TbChevronRight,
-  TbFlag, // <--- Pastikan ini diimport
-} from "react-icons/tb";
-
-// ... (Interface ServiceDetail tetap sama)
+// --- Interface Data ---
 interface ServiceDetail {
   id: string;
   title: string;
@@ -44,7 +38,9 @@ interface ServiceDetail {
   totalOrders: number;
   isActive: boolean;
   status: string;
-  adminNotes?: string | null;
+  whatsIncluded?: string; // Field baru dari sample data Anda
+  requirements?: string;
+  faq?: any[];
   seller: {
     id: string;
     fullName: string;
@@ -72,38 +68,18 @@ interface ServiceDetail {
   }>;
 }
 
-const categoryColors: Record<string, string> = {
-  DESIGN: "bg-purple-100 text-purple-700 border-purple-200",
-  DATA: "bg-green-100 text-green-700 border-green-200",
-  CODING: "bg-blue-100 text-blue-700 border-blue-200",
-  WRITING: "bg-orange-100 text-orange-700 border-orange-200",
-  EVENT: "bg-pink-100 text-pink-700 border-pink-200",
-  TUTOR: "bg-indigo-100 text-indigo-700 border-indigo-200",
-  TECHNICAL: "bg-red-100 text-red-700 border-red-200",
-  OTHER: "bg-gray-100 text-gray-700 border-gray-200",
-};
-
-const categoryNames: Record<string, string> = {
-  DESIGN: "Desain",
-  DATA: "Data",
-  CODING: "Pemrograman",
-  WRITING: "Penulisan",
-  EVENT: "Acara",
-  TUTOR: "Tutor",
-  TECHNICAL: "Teknis",
-  OTHER: "Lainnya",
-};
-
-const ServiceDetailPage = () => {
+export default function ServiceDetailPage() {
   const params = useParams();
   const router = useRouter();
   const { user, isAuthenticated, loading: authLoading } = useAuth();
-  const [service, setService] = useState<ServiceDetail | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [selectedImage, setSelectedImage] = useState(0);
-  const [currentTab, setCurrentTab] = useState("ringkasan");
   const { openChatWith } = useChat();
 
+  const [service, setService] = useState<ServiceDetail | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [activeImageIndex, setActiveImageIndex] = useState(0);
+  const [isLiked, setIsLiked] = useState(false);
+
+  // --- Fetch Data ---
   useEffect(() => {
     const fetchService = async () => {
       try {
@@ -132,34 +108,18 @@ const ServiceDetailPage = () => {
       }
     };
 
-    if (!authLoading) {
-      fetchService();
-    }
+    if (!authLoading) fetchService();
   }, [params.id, router, user, authLoading]);
 
+  // --- Handlers ---
   const handleOrder = () => {
-    if (!isAuthenticated) {
-      router.push("/");
-      return;
-    }
+    if (!isAuthenticated) return router.push("/auth/login");
     router.push(`/orders/create?serviceId=${params.id}`);
   };
 
   const handleChatSeller = () => {
-    if (!isAuthenticated) {
-      router.push("/auth/login");
-      return;
-    }
-
+    if (!isAuthenticated) return router.push("/auth/login");
     if (service) {
-      const servicePreview = {
-        id: service.id,
-        title: service.title,
-        price: service.price,
-        image: service.images[0] || "",
-        sellerId: service.seller.id,
-      };
-
       openChatWith(
         {
           id: service.seller.id,
@@ -167,42 +127,59 @@ const ServiceDetailPage = () => {
           profilePicture: service.seller.profilePicture,
         },
         undefined,
-        servicePreview
+        {
+          id: service.id,
+          title: service.title,
+          price: service.price,
+          image: service.images[0] || "",
+          sellerId: service.seller.id,
+        }
       );
     }
   };
 
-  const getInitials = (name: string) => {
-    return name
+  const handleShare = () => {
+    navigator.clipboard.writeText(window.location.href);
+    toast.success("Link berhasil disalin!");
+  };
+
+  // --- Formatters ---
+  const formatPrice = (amount: number) =>
+    new Intl.NumberFormat("id-ID", {
+      style: "currency",
+      currency: "IDR",
+      minimumFractionDigits: 0,
+    }).format(amount);
+
+  const getInitials = (name: string) =>
+    name
       .split(" ")
       .map((n) => n[0])
       .join("")
       .toUpperCase()
       .slice(0, 2);
-  };
 
-  const formatDate = (dateString: string) => {
-    return new Date(dateString).toLocaleDateString("id-ID", {
-      year: "numeric",
-      month: "long",
-      day: "numeric",
+  // Calculate Rating Distribution
+  const getRatingDistribution = (reviews: ServiceDetail["reviews"]) => {
+    const distribution = { 5: 0, 4: 0, 3: 0, 2: 0, 1: 0 };
+    if (reviews.length === 0) return distribution;
+
+    reviews.forEach((r) => {
+      const rating = Math.floor(r.rating) as 1 | 2 | 3 | 4 | 5;
+      if (rating >= 1 && rating <= 5) {
+        distribution[rating] += 1;
+      }
     });
+    return distribution;
   };
 
-  const handlePrevImage = () => {
-    if (service) {
-      setSelectedImage((prev) =>
-        prev === 0 ? service.images.length - 1 : prev - 1
-      );
-    }
-  };
-
-  const handleNextImage = () => {
-    if (service) {
-      setSelectedImage((prev) =>
-        prev === service.images.length - 1 ? 0 : prev + 1
-      );
-    }
+  // Parse What's Included (splitting by + or newlines for demo purposes if not array)
+  const getIncludedItems = (text?: string) => {
+    if (!text) return [];
+    return text
+      .split(/[\+\n,]+/)
+      .map((item) => item.trim())
+      .filter(Boolean);
   };
 
   if (loading || authLoading) {
@@ -215,499 +192,372 @@ const ServiceDetailPage = () => {
     );
   }
 
-  if (!service) {
-    return null;
-  }
+  if (!service) return null;
 
   const isOwner = isAuthenticated && user?.id === service.seller.id;
-  const isInactive = !service.isActive || service.status !== "ACTIVE";
+  const ratingDist = getRatingDistribution(service.reviews);
+  const includedItems = getIncludedItems(service.whatsIncluded);
 
   return (
     <PublicLayout>
-      <div className="min-h-screen  py-8">
-        <div className="container mx-auto px-4">
-          {/* Status Banner for Owner */}
-          {isOwner && service.status === "PENDING" && (
-            <div className="mb-4 p-3 rounded-md bg-yellow-50 border border-yellow-200 text-yellow-800">
-              Jasa ini sedang menunggu persetujuan administrator. Anda akan
-              diberitahu setelah ditinjau.
-            </div>
-          )}
-          {isOwner && service.status === "REJECTED" && (
-            <div className="mb-4 p-3 rounded-md bg-red-50 border border-red-200 text-red-800">
-              Jasa ini ditolak oleh administrator.{" "}
-              {service.adminNotes
-                ? `Alasan: ${service.adminNotes}`
-                : "Silakan periksa dan perbarui informasinya."}
-            </div>
-          )}
-          {/* Breadcrumb */}
-          <div className="mb-6 text-sm text-gray-600">
-            <span
-              className="hover:text-primary cursor-pointer"
-              onClick={() => router.push("/")}
-            >
-              Home
-            </span>
-            <span className="mx-2">/</span>
-            <span
-              className="hover:text-primary cursor-pointer"
-              onClick={() => router.push("/services")}
-            >
-              Jasa
-            </span>
-            <span className="mx-2">/</span>
-            <span className="text-gray-900">{service.title}</span>
-          </div>
+      {/* Main Content Layout */}
+      <main className="container mx-auto px-4 py-8">
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-12">
+          {/* --- LEFT COLUMN: Content --- */}
+          <div className="lg:col-span-8 flex flex-col gap-8">
+            {/* 1. Breadcrumbs & Title */}
+            <div>
+              <nav className="flex items-center gap-2 text-xs font-medium text-muted-foreground mb-4">
+                <Link href="/" className="hover:text-primary hover:underline">
+                  Beranda
+                </Link>
+                <span>/</span>
+                <Link
+                  href="/services"
+                  className="hover:text-primary hover:underline"
+                >
+                  Jasa
+                </Link>
+                <span>/</span>
+                <span className="text-foreground">{service.title}</span>
+              </nav>
 
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-            {/* Main Content */}
-            <div className="lg:col-span-2 space-y-6">
-              {/* Image Slideshow */}
-              <Card className="overflow-hidden py-0 border-2 border-secondary">
-                <div className="relative w-full aspect-video bg-gray-100">
-                  {service.images.length > 0 ? (
-                    <Image
-                      src={service.images[selectedImage]}
-                      alt={service.title}
-                      fill
-                      sizes="1080"
-                      className="object-cover"
-                      loading="eager"
-                    />
-                  ) : (
-                    <div className="flex h-full items-center justify-center">
-                      <span className="text-6xl">📦</span>
-                    </div>
-                  )}
+              <h1 className="text-3xl md:text-4xl font-extrabold tracking-tight text-foreground leading-tight font-display">
+                {service.title}
+              </h1>
 
-                  {/* Navigation Arrows */}
-                  {service.images.length > 1 && (
-                    <>
-                      <Button
-                        size="icon"
-                        variant="ghost"
-                        className="absolute left-4 top-1/2 -translate-y-1/2 h-10 w-10 rounded-full bg-white/90 hover:bg-white shadow-lg"
-                        onClick={handlePrevImage}
-                      >
-                        <TbChevronLeft className="h-6 w-6" />
-                      </Button>
-                      <Button
-                        size="icon"
-                        variant="ghost"
-                        className="absolute right-4 top-1/2 -translate-y-1/2 h-10 w-10 rounded-full bg-white/90 hover:bg-white shadow-lg"
-                        onClick={handleNextImage}
-                      >
-                        <TbChevronRight className="h-6 w-6" />
-                      </Button>
-
-                      {/* Image Counter */}
-                      <div className="absolute bottom-4 right-4 bg-black/60 text-white px-3 py-1 rounded-full text-sm">
-                        {selectedImage + 1} / {service.images.length}
-                      </div>
-                    </>
-                  )}
-                </div>
-              </Card>
-
-              {/* Service Info with Tabs */}
-              <Card>
-                <CardHeader className="pb-4">
-                  <div className="mb-3">
-                    <Badge
-                      variant="outline"
-                      className={categoryColors[service.category]}
+              <div className="mt-4 flex flex-wrap items-center gap-4 text-sm">
+                <div className="flex items-center gap-2">
+                  <Avatar className="size-8">
+                    <AvatarImage src={service.seller.profilePicture || ""} />
+                    <AvatarFallback>
+                      {getInitials(service.seller.fullName)}
+                    </AvatarFallback>
+                  </Avatar>
+                  <div className="flex flex-col">
+                    <Link
+                      href={`/profile/${service.seller.id}`}
+                      className="font-bold text-foreground hover:underline"
                     >
-                      {categoryNames[service.category]}
-                    </Badge>
-                  </div>
-
-                  <CardTitle className="text-2xl mb-2 font-display">
-                    {service.title}
-                  </CardTitle>
-
-                  <div className="flex items-center gap-4 text-sm">
-                    <div className="flex items-center gap-1">
-                      <TbStar className="h-4 w-4 fill-yellow-400 text-yellow-400" />
-                      <span className="font-medium">
-                        {Number(service.avgRating) > 0
-                          ? Number(service.avgRating).toFixed(1)
-                          : "Baru"}
-                      </span>
-                      {service.totalReviews > 0 && (
-                        <span className="text-gray-400">
-                          ({service.totalReviews} ulasan)
-                        </span>
-                      )}
-                    </div>
-
-                    <Separator orientation="vertical" className="h-4" />
-
-                    <div className="text-gray-600">
-                      {service.totalOrders} pesanan
+                      {service.seller.fullName}
+                    </Link>
+                    <div>
+                      <h2 className="text-[12px] text-secondary">
+                        {service.seller.major || "Mahasiswa UIN Suska"}{" "}
+                        {service.seller.batch && `• ${service.seller.batch}`}
+                      </h2>
                     </div>
                   </div>
-                </CardHeader>
+                </div>
 
-                <CardContent>
-                  <Tabs
-                    value={currentTab}
-                    onValueChange={setCurrentTab}
-                    className="w-full"
-                  >
-                    <TabsList className="w-full grid grid-cols-3 mb-6">
-                      <TabsTrigger value="ringkasan">Ringkasan</TabsTrigger>
-                      <TabsTrigger value="freelancer">Penyedia</TabsTrigger>
-                      <TabsTrigger value="ulasan">Ulasan</TabsTrigger>
-                    </TabsList>
+                <Separator orientation="vertical" className="h-4" />
+                <div className="flex gap-2">
+                  <span>{service.seller.totalOrdersCompleted} Pesanan</span>
+                </div>
+              </div>
+            </div>
 
-                    {/* Ringkasan Tab */}
-                    <TabsContent value="ringkasan" className="space-y-4">
+            {/* 2. Gallery */}
+            <div className="flex flex-col gap-4">
+              <div className="group relative aspect-video w-full overflow-hidden rounded-xl bg-slate-100 border border-border">
+                {/* Main Image */}
+                <img
+                  src={service.images[activeImageIndex] || "/placeholder.svg"}
+                  alt={service.title}
+                  className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105"
+                />
+              </div>
+
+              {/* Thumbnails */}
+              {service.images.length > 1 && (
+                <div className="grid grid-cols-5 gap-3 md:gap-4">
+                  {service.images.map((img, idx) => (
+                    <div
+                      key={idx}
+                      onClick={() => setActiveImageIndex(idx)}
+                      className={`aspect-video cursor-pointer overflow-hidden rounded-lg bg-slate-100 border-2 transition-all ${
+                        activeImageIndex === idx
+                          ? "border-primary ring-2 ring-primary/20"
+                          : "border-transparent opacity-70 hover:opacity-100"
+                      }`}
+                    >
+                      <img
+                        src={img}
+                        className="h-full w-full object-cover"
+                        alt="thumbnail"
+                      />
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+
+            {/* 3. About This Service */}
+            <div className="">
+              <h2 className="text-xl font-display font-bold text-foreground ">
+                Tentang Jasa Ini
+              </h2>
+              <div className="prose prose-slate max-w-none text-muted-foreground leading-relaxed whitespace-pre-wrap">
+                {service.description}
+              </div>
+            </div>
+
+            {/* 4. What's Included */}
+            {includedItems.length > 0 && (
+              <div className="rounded-2xl border bg-card p-6 md:p-8">
+                <h2 className="text-xl font-bold text-foreground mb-6">
+                  Yang Anda Dapatkan
+                </h2>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  {includedItems.map((item, idx) => (
+                    <div key={idx} className="flex items-start gap-3">
+                      <CheckCircle2 className="text-green-500 mt-0.5 size-5 shrink-0" />
                       <div>
-                        <h3 className="text-lg font-semibold mb-3">
-                          Deskripsi Layanan
-                        </h3>
-                        <p className="text-gray-700 leading-relaxed whitespace-pre-wrap">
-                          {service.description}
+                        <h3 className="font-medium text-foreground">{item}</h3>
+                        <p className="text-sm text-muted-foreground">
+                          Termasuk dalam paket
                         </p>
                       </div>
+                    </div>
+                  ))}
+                  {/* Default Includes based on metadata */}
+                  <div className="flex items-start gap-3">
+                    <CheckCircle2 className="text-green-500 mt-0.5 size-5 shrink-0" />
+                    <div>
+                      <h3 className="font-medium text-foreground">
+                        {service.revisions}x Revisi
+                      </h3>
+                      <p className="text-sm text-muted-foreground">
+                        Jaminan kepuasan
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
 
-                      <Separator />
+            {/* 6. Reviews */}
+            <div>
+              <h2 className="text-xl font-display font-bold text-foreground mb-6">
+                Ulasan Klien
+              </h2>
 
-                      <div>
-                        <h3 className="text-lg font-semibold mb-3">
-                          Yang Akan Anda Dapatkan
-                        </h3>
-                        <ul className="space-y-2">
-                          <li className="flex items-start gap-2">
-                            <TbCheck className="h-5 w-5 text-primary mt-0.5 shrink-0" />
-                            <span className="text-gray-700">
-                              Layanan profesional dan terpercaya
-                            </span>
-                          </li>
-                          <li className="flex items-start gap-2">
-                            <TbCheck className="h-5 w-5 text-primary mt-0.5 shrink-0" />
-                            <span className="text-gray-700">
-                              Garansi kepuasan pelanggan
-                            </span>
-                          </li>
-                          <li className="flex items-start gap-2">
-                            <TbCheck className="h-5 w-5 text-primary mt-0.5 shrink-0" />
-                            <span className="text-gray-700">
-                              Komunikasi yang responsif
-                            </span>
-                          </li>
-                          <li className="flex items-start gap-2">
-                            <TbCheck className="h-5 w-5 text-primary mt-0.5 shrink-0" />
-                            <span className="text-gray-700">
-                              Revisi sesuai kesepakatan
-                            </span>
-                          </li>
-                        </ul>
-                      </div>
-                    </TabsContent>
+              {/* Rating Summary */}
+              <div className="bg-card p-6 border border-primary">
+                <div className="flex flex-col md:flex-row gap-8 items-center">
+                  <div className="flex flex-col items-center gap-1 min-w-[140px]">
+                    <span className="text-5xl font-black text-foreground tracking-tighter">
+                      {Number(service.avgRating).toFixed(1)}
+                    </span>
+                    <div className="flex text-amber-500 gap-0.5">
+                      {[1, 2, 3, 4, 5].map((star) => (
+                        <Star
+                          key={star}
+                          className={`size-4 ${
+                            star <= Math.round(service.avgRating)
+                              ? "fill-current"
+                              : "text-slate-200 fill-slate-200"
+                          }`}
+                        />
+                      ))}
+                    </div>
+                    <span className="text-sm text-muted-foreground font-medium mt-1">
+                      {service.totalReviews} Ulasan
+                    </span>
+                  </div>
 
-                    {/* Freelancer Tab */}
-                    <TabsContent value="freelancer" className="space-y-4">
-                      <div
-                        className="flex items-start gap-4 cursor-pointer p-4 rounded-lg transition-colors -mx-4"
-                        onClick={() =>
-                          router.push(`/profile/${service.seller.id}`)
-                        }
-                      >
-                        <Avatar className="h-20 w-20">
+                  <div className="flex-1 w-full grid gap-2">
+                    {[5, 4, 3, 2, 1].map((star) => {
+                      // @ts-ignore
+                      const count = ratingDist[star] || 0;
+                      const percentage =
+                        service.totalReviews > 0
+                          ? (count / service.totalReviews) * 100
+                          : 0;
+                      return (
+                        <div
+                          key={star}
+                          className="flex items-center gap-3 text-sm"
+                        >
+                          <span className="font-medium w-3 text-foreground">
+                            {star}
+                          </span>
+                          <Progress value={percentage} className="h-2 flex-1" />
+                          <span className="text-muted-foreground w-8 text-right">
+                            {Math.round(percentage)}%
+                          </span>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              </div>
+
+              {/* Individual Review */}
+              <div className="space-y-6">
+                {service.reviews.length > 0 ? (
+                  service.reviews.map((review) => (
+                    <div
+                      key={review.id}
+                      className="border-b pb-6 last:border-0"
+                    >
+                      <div className="flex items-start gap-3 mb-2">
+                        <Avatar className="size-10">
                           <AvatarImage
-                            src={service.seller.profilePicture || ""}
-                            alt={service.seller.fullName}
+                            src={review.author.profilePicture || ""}
                           />
-                          <AvatarFallback className="bg-primary text-white text-lg">
-                            {getInitials(service.seller.fullName)}
+                          <AvatarFallback>
+                            {getInitials(review.author.fullName)}
                           </AvatarFallback>
                         </Avatar>
-
-                        <div className="flex-1">
-                          <div className="flex items-start justify-between">
-                            <div>
-                              <h3 className="text-xl font-semibold">
-                                {service.seller.fullName}
-                              </h3>
-                              {service.seller.major && (
-                                <p className="text-sm text-gray-600">
-                                  {service.seller.major}
-                                  {service.seller.batch &&
-                                    ` • Angkatan ${service.seller.batch}`}
-                                </p>
-                              )}
-                            </div>
-
-                            {/* BUTTON REPORT DI SINI */}
-                            {isAuthenticated &&
-                              user?.id !== service.seller.id && (
-                                <div onClick={(e) => e.stopPropagation()}>
-                                  <ReportUserDialog
-                                    reportedUserId={service.seller.id}
-                                    reportedUserName={service.seller.fullName}
-                                    trigger={
-                                      <Button
-                                        variant="ghost"
-                                        size="sm"
-                                        className="text-muted-foreground hover:text-destructive h-auto py-1 px-2"
-                                      >
-                                        <TbFlag className="w-4 h-4 mr-1" />
-                                        <span className="text-xs">
-                                          Laporkan
-                                        </span>
-                                      </Button>
-                                    }
-                                  />
-                                </div>
-                              )}
-                          </div>
-
-                          <div className="flex items-center gap-1 text-sm text-gray-600 mt-2">
-                            <TbStar className="h-4 w-4 fill-yellow-400 text-yellow-400" />
-                            <span className="font-medium">
-                              {Number(service.seller.avgRating || 0).toFixed(1)}
-                            </span>
-                            <span className="text-gray-400">
-                              ({service.seller.totalReviews} ulasan)
-                            </span>
-                          </div>
-
-                          {service.seller.bio && (
-                            <p className="mt-3 text-sm text-gray-700 leading-relaxed">
-                              {service.seller.bio}
-                            </p>
-                          )}
-                        </div>
-                      </div>
-
-                      <div className="grid grid-cols-2 gap-4 mt-4">
-                        <div className="text-center p-4 bg-green-50 rounded-lg border border-green-200">
-                          <p className="text-2xl font-semibold text-primary mb-1">
-                            {service.seller.totalOrdersCompleted}
-                          </p>
-                          <p className="text-xs text-gray-600">
-                            Pesanan Selesai
-                          </p>
-                        </div>
-                        <div className="text-center p-4 bg-green-50 rounded-lg border border-green-200">
-                          <p className="text-2xl font-semibold text-primary mb-1">
-                            {service.seller.totalReviews}
-                          </p>
-                          <p className="text-xs text-gray-600">Total Ulasan</p>
-                        </div>
-                      </div>
-                    </TabsContent>
-
-                    {/* Ulasan Tab */}
-                    <TabsContent value="ulasan" className="space-y-6">
-                      {service.reviews.length > 0 ? (
-                        service.reviews.map((review) => (
-                          <div
-                            key={review.id}
-                            className="border-b last:border-0 pb-6 last:pb-0"
-                          >
-                            <div className="flex items-start gap-3 mb-3">
-                              <Avatar className="h-10 w-10">
-                                <AvatarImage
-                                  src={review.author.profilePicture || ""}
-                                  alt={review.author.fullName}
+                        <div>
+                          <h4 className="font-semibold text-sm text-foreground">
+                            {review.author.fullName}
+                          </h4>
+                          <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                            <div className="flex text-amber-500">
+                              {[...Array(5)].map((_, i) => (
+                                <Star
+                                  key={i}
+                                  className={`size-3 ${
+                                    i < review.rating
+                                      ? "fill-current"
+                                      : "text-slate-200 fill-slate-200"
+                                  }`}
                                 />
-                                <AvatarFallback className="bg-primary text-white text-sm">
-                                  {getInitials(review.author.fullName)}
-                                </AvatarFallback>
-                              </Avatar>
-
-                              <div className="flex-1">
-                                <div className="flex items-center justify-between mb-1">
-                                  <div>
-                                    <p className="font-medium">
-                                      {review.author.fullName}
-                                    </p>
-                                    {review.author.major && (
-                                      <p className="text-xs text-gray-500">
-                                        {review.author.major}
-                                      </p>
-                                    )}
-                                  </div>
-                                  <div className="flex items-center gap-1">
-                                    {[...Array(5)].map((_, i) => (
-                                      <TbStar
-                                        key={i}
-                                        className={`h-4 w-4 ${
-                                          i < review.rating
-                                            ? "fill-yellow-400 text-yellow-400"
-                                            : "text-gray-300"
-                                        }`}
-                                      />
-                                    ))}
-                                  </div>
-                                </div>
-
-                                <p className="text-xs text-gray-500 mb-2">
-                                  {formatDate(review.createdAt)}
-                                </p>
-
-                                <p className="text-sm text-gray-700 leading-relaxed">
-                                  {review.comment}
-                                </p>
-
-                                {review.sellerResponse && (
-                                  <div className="mt-3 pl-4 border-l-2 border-green-600">
-                                    <p className="text-sm font-medium">
-                                      Tanggapan Penyedia
-                                    </p>
-                                    <p className="text-sm text-gray-700 mt-1">
-                                      {review.sellerResponse}
-                                    </p>
-                                  </div>
-                                )}
-                              </div>
+                              ))}
                             </div>
+                            <span>
+                              •{" "}
+                              {new Date(review.createdAt).toLocaleDateString()}
+                            </span>
                           </div>
-                        ))
-                      ) : (
-                        <div className="text-center py-8 text-gray-500">
-                          Belum ada ulasan untuk layanan ini
+                        </div>
+                      </div>
+                      <p className="text-foreground/80 text-sm leading-relaxed pl-14">
+                        "{review.comment}"
+                      </p>
+                      {review.sellerResponse && (
+                        <div className="mt-3 ml-14 pl-4 border-l-2 border-primary bg-secondary/20 p-3 rounded-r-md">
+                          <p className="text-xs font-semibold text-primary mb-1">
+                            Respon Penjual:
+                          </p>
+                          <p className="text-xs text-muted-foreground">
+                            {review.sellerResponse}
+                          </p>
                         </div>
                       )}
-                    </TabsContent>
-                  </Tabs>
-                </CardContent>
-              </Card>
+                    </div>
+                  ))
+                ) : (
+                  <p className="text-center text-muted-foreground py-8">
+                    Belum ada ulasan untuk jasa ini.
+                  </p>
+                )}
+              </div>
             </div>
 
-            {/* Sidebar */}
-            <div className="lg:col-span-1">
-              <div className="sticky top-4 space-y-4">
-                {/* Warning Card */}
-                {isInactive && (
-                  <Card className="border-2 border-yellow-400 bg-yellow-50">
-                    <CardContent className="p-4">
-                      <div className="flex items-center gap-3">
-                        <TbEyeOff className="h-8 w-8 text-yellow-700 shrink-0" />
-                        <div>
-                          <p className="font-semibold text-yellow-800">
-                            Jasa Tidak Aktif
-                          </p>
-                          <p className="text-sm text-yellow-700">
-                            Hanya Anda yang dapat melihat halaman pratinjau ini.
-                          </p>
-                        </div>
-                      </div>
-                    </CardContent>
-                  </Card>
-                )}
+            {/* 7. FAQ (Optional / Mock if empty) */}
+            {service.faq && service.faq.length > 0 && (
+              <div className="mb-12">
+                <h2 className="text-xl font-bold text-foreground mb-6">
+                  Pertanyaan Umum
+                </h2>
+                {/* FAQ rendering logic here if data exists */}
+              </div>
+            )}
+          </div>
 
-                {/* Order Card */}
-                <Card className="border-2 border-primary">
-                  <CardContent className="p-6">
-                    <div className="mb-6">
-                      <p className="text-sm text-gray-500 mb-1">Mulai dari</p>
-                      <p className="text-3xl font-bold text-primary mb-1">
-                        Rp {Number(service.price).toLocaleString("id-ID")}
-                      </p>
+          {/* --- RIGHT COLUMN: Sticky Booking Card --- */}
+          <div className="lg:col-span-4">
+            <div className="sticky top-36 space-y-4">
+              <div className="border border-primary overflow-hidden">
+                {/* Header */}
+                <div className="p-6 bg-teal-900">
+                  <div className="flex items-baseline gap-1 mb-2">
+                    <span className="text-3xl font-bold text-primary-foreground">
+                      {formatPrice(service.price)}
+                    </span>
+                  </div>
+                </div>
+
+                {/* Details */}
+                <div className="p-6 bg-card">
+                  <div className="grid grid-cols-2 gap-4 mb-6">
+                    <div className="flex flex-col gap-1">
+                      <div className="flex items-center gap-2 text-muted-foreground text-xs font-semibold uppercase">
+                        <Clock className="size-4" />
+                        Pengerjaan
+                      </div>
+                      <span className="font-medium text-foreground">
+                        {service.deliveryTime} Hari
+                      </span>
                     </div>
-
-                    <div className="space-y-3 mb-6">
-                      <div className="flex items-center justify-between text-sm">
-                        <div className="flex items-center gap-2 text-gray-600">
-                          <TbClock className="h-4 w-4" />
-                          <span>Waktu Pengerjaan</span>
-                        </div>
-                        <span className="font-medium">
-                          {service.deliveryTime} hari
-                        </span>
+                    <div className="flex flex-col gap-1">
+                      <div className="flex items-center gap-2 text-muted-foreground text-xs font-semibold uppercase">
+                        <RefreshCcw className="size-4" />
+                        Revisi
                       </div>
-
-                      <div className="flex items-center justify-between text-sm">
-                        <div className="flex items-center gap-2 text-gray-600">
-                          <TbRefresh className="h-4 w-4" />
-                          <span>Revisi</span>
-                        </div>
-                        <span className="font-medium">
-                          {service.revisions}x
-                        </span>
-                      </div>
+                      <span className="font-medium text-foreground">
+                        {service.revisions === -1
+                          ? "Unlimited"
+                          : `${service.revisions}x`}
+                      </span>
                     </div>
+                  </div>
 
-                    <Button
-                      onClick={handleOrder}
-                      className="w-full mb-2"
-                      size="lg"
-                      disabled={isOwner || isInactive}
-                    >
-                      <TbShoppingCart className="mr-2" />
-                      {isOwner
-                        ? "Jasa Anda Sendiri"
-                        : isInactive
-                        ? "Jasa Tidak Tersedia"
-                        : "Pesan Sekarang"}
-                    </Button>
+                  {/* Features List */}
 
+                  <Button
+                    onClick={handleOrder}
+                    disabled={isOwner || !service.isActive}
+                    size="lg"
+                    className="w-full font-bold"
+                  >
+                    {isOwner ? "Kelola Jasa" : "Pesan Sekarang"}
+                  </Button>
+
+                  {!isOwner && (
                     <Button
-                      onClick={handleChatSeller}
                       variant="outline"
-                      className="w-full"
                       size="lg"
-                      disabled={isOwner || isInactive}
+                      onClick={handleChatSeller}
+                      className="w-full mt-3 "
                     >
-                      <TbMessageCircle className="mr-2 h-5 w-5" />
-                      {isOwner
-                        ? "Jasa Anda Sendiri"
-                        : isInactive
-                        ? "Jasa Tidak Tersedia"
-                        : "Chat Penyedia"}
+                      <MessageCircle className="mr-2 size-4" />
+                      Chat Penjual
                     </Button>
-                    {!isAuthenticated && (
-                      <p className="text-xs text-center text-gray-500">
-                        Login untuk melakukan pemesanan
-                      </p>
-                    )}
+                  )}
+                </div>
 
-                    <Separator className="my-6" />
+                {/* Trust Signals */}
+                <div className="bg-teal-900 p-4 flex items-center justify-center gap-4 text-xs text-primary-foreground">
+                  <div className="flex items-center gap-1">
+                    <ShieldCheck className="size-4" />
+                    Pembayaran Aman
+                  </div>
+                  <div className="flex items-center gap-1">
+                    <CheckCircle2 className="size-4" />
+                    Sistem Rekber
+                  </div>
+                </div>
+              </div>
 
-                    <div className="space-y-4">
-                      <div className="flex items-center gap-3">
-                        <TbShield className="h-5 w-5 text-primary shrink-0" />
-                        <div className="flex-1">
-                          <p className="text-sm font-medium">Pembayaran Aman</p>
-                          <p className="text-xs text-gray-500">
-                            Dana di-escrow hingga pekerjaan selesai
-                          </p>
-                        </div>
-                      </div>
-                      <div className="flex items-center gap-3">
-                        <TbBadgeCc className="h-5 w-5 text-primary shrink-0" />
-                        <div className="flex-1">
-                          <p className="text-sm font-medium">
-                            Penyedia Terverifikasi
-                          </p>
-                          <p className="text-xs text-gray-500">
-                            Identitas sudah diverifikasi
-                          </p>
-                        </div>
-                      </div>
-                      <div className="flex items-center gap-3">
-                        <TbMessageCircle className="h-5 w-5 text-primary shrink-0" />
-                        <div className="flex-1">
-                          <p className="text-sm font-medium">Dukungan 24/7</p>
-                          <p className="text-xs text-gray-500">
-                            Tim kami siap membantu Anda
-                          </p>
-                        </div>
-                      </div>
-                    </div>
-                  </CardContent>
-                </Card>
+              {/* Share Button (Mobile friendly place or extra option) */}
+              <div className="flex justify-center">
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={handleShare}
+                  className="text-muted-foreground"
+                >
+                  <Share2 className="mr-2 size-4" /> Bagikan Jasa Ini
+                </Button>
               </div>
             </div>
           </div>
         </div>
-      </div>
+      </main>
     </PublicLayout>
   );
-};
-
-export default ServiceDetailPage;
+}

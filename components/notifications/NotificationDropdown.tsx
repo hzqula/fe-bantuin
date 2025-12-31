@@ -143,7 +143,7 @@ const NotificationDropdown = () => {
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
-        <Button variant="ghost" size="icon" className="relative">
+        <Button variant="ghost" size="icon" className="relative rounded-full">
           {isLoadingCount ? (
             <Loader2 className="h-5 w-5 animate-spin text-primary/50" />
           ) : (
@@ -202,7 +202,7 @@ const NotificationDropdown = () => {
               )}
             </div>
 
-            <ScrollArea className="h-[320px] w-full">
+            <ScrollArea className="h-80 w-full">
               {isLoading && (
                 <div className="text-center py-10">
                   <Loader2 className="mx-auto h-6 w-6 animate-spin text-primary" />
@@ -231,7 +231,7 @@ const NotificationDropdown = () => {
               <p className="text-base font-bold">Riwayat Aktivitas</p>
             </div>
 
-            <ScrollArea className="h-[320px] w-full">
+            <ScrollArea className="h-80 w-full">
               {activities.length === 0 ? (
                 <div className="text-center py-12 text-gray-500">
                   <p className="text-sm">Belum ada aktivitas</p>
