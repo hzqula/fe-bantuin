@@ -18,6 +18,10 @@ const nextConfig: any = {
         protocol: "https",
         hostname: "ytrxhrltkqztkcnqlcrz.storage.supabase.co",
       },
+      {
+        protocol: "https",
+        hostname: "rskkqpmgscsyclbtnkci.storage.supabase.co",
+      },
       { protocol: "https", hostname: "images.unsplash.com" },
       { protocol: "https", hostname: "tse2.mm.bing.net" },
       { protocol: "https", hostname: "tse1.mm.bing.net" },
