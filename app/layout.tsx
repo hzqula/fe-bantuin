@@ -1,5 +1,5 @@
 import type { Metadata, Viewport } from "next";
-import { Outfit } from "next/font/google";
+import { Andika, Raleway } from "next/font/google";
 import "./globals.css";
 import { AuthProvider } from "@/contexts/AuthContext";
 import { ChatProvider } from "@/contexts/ChatContext";
@@ -10,30 +10,36 @@ import { TermsModal } from "@/components/auth/TermsModal";
 import { ServiceWorkerRegister } from "@/app/components/ServiceWorkerRegister";
 import { PWAInstallPrompt } from "@/components/pwa/PWAInstallPrompt";
 
-const mattone = localFont({
-  src: [
-    {
-      path: "../public/fonts/mattone/Mattone-Regular.woff2",
-      weight: "400",
-      style: "normal",
-    },
-    {
-      path: "../public/fonts/mattone/Mattone-Bold.woff2",
-      weight: "700",
-      style: "normal",
-    },
-    {
-      path: "../public/fonts/mattone/Mattone-Black.woff2",
-      weight: "900",
-      style: "normal",
-    },
-  ],
+// const mattone = localFont({
+//   src: [
+//     {
+//       path: "../public/fonts/mattone/Mattone-Regular.woff2",
+//       weight: "400",
+//       style: "normal",
+//     },
+//     {
+//       path: "../public/fonts/mattone/Mattone-Bold.woff2",
+//       weight: "700",
+//       style: "normal",
+//     },
+//     {
+//       path: "../public/fonts/mattone/Mattone-Black.woff2",
+//       weight: "900",
+//       style: "normal",
+//     },
+//   ],
+//   variable: "--font-mattone",
+// });
+
+const mattone = Raleway({
+  subsets: ["latin"],
   variable: "--font-mattone",
+  display: "swap",
 });
 
-const outfit = Outfit({
+const outfit = Andika({
   variable: "--font-outfit",
-  subsets: ["latin"],
+  weight: ["400", "700"],
 });
 
 export const metadata: Metadata = {
