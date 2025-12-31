@@ -44,12 +44,12 @@ const Hero = () => {
       <div className="absolute top-0 left-0 w-full h-full bg-black/70"></div>
 
       {/* Content */}
-      <div className="relative z-10 flex flex-col justify-center h-full px-4 sm:px-6 md:px-12 lg:px-48">
+      <div className="relative z-10 flex flex-col justify-center items-center h-full px-4 sm:px-6 md:px-12 lg:px-48 text-center">
         <h1 className="font-display font-bold text-2xl sm:text-3xl md:text-4xl lg:text-5xl text-white mb-3">
           Temukan Bantuan di <span className="text-secondary">Bantuin</span>
         </h1>
 
-        <p className="text-white/90 text-sm sm:text-lg md:text-xl max-w-3xl">
+        <p className="text-white/90 text-sm sm:text-lg md:text-xl max-w-2xl">
           Platform marketplace jasa yang bakal ngehubungin antara si penyedia
           dan pengguna jasa oleh dan buat mahasiswa di kampus UIN Suska Riau
         </p>

@@ -5,12 +5,32 @@ import { useRouter } from "next/navigation";
 import { useAuth } from "@/contexts/AuthContext";
 import SellerLayout from "@/components/layouts/SellerLayout";
 import { toast } from "sonner";
-import ServiceForm, { ServiceFormData } from "@/components/services/ServiceForm";
+import ServiceForm, {
+  ServiceFormData,
+} from "@/components/services/ServiceForm";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
-import { TbPlus, TbDots, TbEdit, TbTrash, TbEye, TbEyeOff, TbStar, TbShoppingCart, TbClock, TbChevronLeft, TbChevronRight } from "react-icons/tb";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import {
+  TbPlus,
+  TbDots,
+  TbEdit,
+  TbTrash,
+  TbEye,
+  TbEyeOff,
+  TbStar,
+  TbShoppingCart,
+  TbClock,
+  TbChevronLeft,
+  TbChevronRight,
+} from "react-icons/tb";
 import Image from "next/image";
 
 interface Service {
@@ -41,7 +61,13 @@ const categoryNames: Record<string, string> = {
   OTHER: "Lainnya",
 };
 
-const ServiceImageSlider = ({ images, title }: { images: string[]; title: string }) => {
+const ServiceImageSlider = ({
+  images,
+  title,
+}: {
+  images: string[];
+  title: string;
+}) => {
   const [index, setIndex] = useState(0);
 
   // Auto slide
@@ -75,25 +101,44 @@ const ServiceImageSlider = ({ images, title }: { images: string[]; title: string
 
   return (
     <div className="relative w-full h-full group/slider overflow-hidden">
-      <div className="flex h-full transition-transform duration-500 ease-in-out" style={{ transform: `translateX(-${index * 100}%)` }}>
+      <div
+        className="flex h-full transition-transform duration-500 ease-in-out"
+        style={{ transform: `translateX(-${index * 100}%)` }}
+      >
         {images.map((img, i) => (
           <div key={i} className="relative w-full h-full flex-shrink-0">
-            <Image src={img} alt={`${title} ${i + 1}`} fill className="object-cover" />
+            <Image
+              src={img}
+              alt={`${title} ${i + 1}`}
+              fill
+              className="object-cover"
+            />
           </div>
         ))}
       </div>
 
       {images.length > 1 && (
         <>
-          <button onClick={prev} className="absolute left-2 top-1/2 -translate-y-1/2 bg-black/50 text-white p-1 rounded-full opacity-0 group-hover/slider:opacity-100 transition-opacity hover:bg-black/70 z-10">
+          <button
+            onClick={prev}
+            className="absolute left-2 top-1/2 -translate-y-1/2 bg-black/50 text-white p-1 rounded-full opacity-0 group-hover/slider:opacity-100 transition-opacity hover:bg-black/70 z-10"
+          >
             <TbChevronLeft size={16} />
           </button>
-          <button onClick={next} className="absolute right-2 top-1/2 -translate-y-1/2 bg-black/50 text-white p-1 rounded-full opacity-0 group-hover/slider:opacity-100 transition-opacity hover:bg-black/70 z-10">
+          <button
+            onClick={next}
+            className="absolute right-2 top-1/2 -translate-y-1/2 bg-black/50 text-white p-1 rounded-full opacity-0 group-hover/slider:opacity-100 transition-opacity hover:bg-black/70 z-10"
+          >
             <TbChevronRight size={16} />
           </button>
           <div className="absolute bottom-2 left-1/2 -translate-x-1/2 flex gap-1 z-10">
             {images.map((_, i) => (
-              <div key={i} className={`w-1.5 h-1.5 rounded-full shadow-sm transition-all ${i === index ? "bg-white scale-125" : "bg-white/60"}`} />
+              <div
+                key={i}
+                className={`w-1.5 h-1.5 rounded-full shadow-sm transition-all ${
+                  i === index ? "bg-white scale-125" : "bg-white/60"
+                }`}
+              />
             ))}
           </div>
         </>
@@ -164,10 +209,14 @@ const SellerServicesPage = () => {
 
         // If server couldn't enforce PENDING, inform the seller
         if (data.warning) {
-          toast.warning(`${data.warning} Jika Anda melihat jasa muncul secara publik, hubungi administrator.`);
+          toast.warning(
+            `${data.warning} Jika Anda melihat jasa muncul secara publik, hubungi administrator.`
+          );
         } else if (data.data?.status === "PENDING") {
           // Inform seller if service is pending review
-          toast.success("Jasa Anda berhasil dibuat dan dikirim untuk ditinjau oleh administrator.");
+          toast.success(
+            "Jasa Anda berhasil dibuat dan dikirim untuk ditinjau oleh administrator."
+          );
         }
       } else {
         toast.error(data.error || "Gagal membuat jasa");
@@ -183,8 +232,10 @@ const SellerServicesPage = () => {
 
     try {
       const token = localStorage.getItem("access_token");
-      // If the service was previously rejected, resubmit for review
-      const payload = editingService.status === "REJECTED" ? { ...formData, status: "PENDING", isActive: false } : formData;
+      const payload =
+        editingService.status === "REJECTED"
+          ? { ...formData, status: "PENDING", isActive: false }
+          : formData;
 
       const response = await fetch(`/api/services/${editingService.id}`, {
         method: "PATCH",
@@ -202,7 +253,9 @@ const SellerServicesPage = () => {
         setEditingService(null);
         setFormOpen(false);
         if (data.data?.status === "PENDING") {
-          toast.info("Jasa berhasil dikirim ulang untuk peninjauan administrator.");
+          toast.info(
+            "Jasa berhasil dikirim ulang untuk peninjauan administrator."
+          );
         } else {
           toast.success("Perubahan jasa tersimpan");
         }
@@ -291,12 +344,18 @@ const SellerServicesPage = () => {
     <SellerLayout>
       <div className="space-y-6">
         {/* Header */}
-        <div className="flex items-center justify-between">
+        <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
           <div>
             <h1 className="text-2xl font-bold text-foreground">Jasa Saya</h1>
-            <p className="text-muted-foreground">Kelola semua jasa yang Anda tawarkan</p>
+            <p className="text-muted-foreground">
+              Kelola semua jasa yang Anda tawarkan
+            </p>
           </div>
-          <Button onClick={() => setFormOpen(true)}>
+
+          <Button
+            onClick={() => setFormOpen(true)}
+            className="w-full sm:w-auto"
+          >
             <TbPlus className="mr-2" />
             Tambah Jasa Baru
           </Button>
@@ -308,7 +367,9 @@ const SellerServicesPage = () => {
             <CardContent className="flex flex-col items-center justify-center py-12">
               <div className="text-6xl mb-4">📦</div>
               <h3 className="text-xl font-semibold mb-2">Belum ada jasa</h3>
-              <p className="text-muted-foreground mb-4">Mulai tawarkan keahlianmu dengan membuat jasa baru</p>
+              <p className="text-muted-foreground mb-4">
+                Mulai tawarkan keahlianmu dengan membuat jasa baru
+              </p>
               <Button onClick={() => setFormOpen(true)}>
                 <TbPlus className="mr-2" />
                 Buat Jasa Pertama
@@ -320,12 +381,19 @@ const SellerServicesPage = () => {
             {services.map((service) => (
               <Card key={service.id} className="overflow-hidden">
                 <div className="relative aspect-video w-full overflow-hidden bg-gray-100 group">
-                  <ServiceImageSlider images={service.images} title={service.title} />
+                  <ServiceImageSlider
+                    images={service.images}
+                    title={service.title}
+                  />
 
                   <div className="absolute top-2 right-2">
                     <DropdownMenu>
                       <DropdownMenuTrigger asChild>
-                        <Button size="icon-sm" variant="secondary" className="bg-white/90 hover:bg-white">
+                        <Button
+                          size="icon-sm"
+                          variant="secondary"
+                          className="bg-white/90 hover:bg-white"
+                        >
                           <TbDots className="h-4 w-4" />
                         </Button>
                       </DropdownMenuTrigger>
@@ -336,10 +404,13 @@ const SellerServicesPage = () => {
                         </DropdownMenuItem>
                         {service.status === "PENDING" ? (
                           <DropdownMenuItem disabled>
-                            <TbClock className="mr-2 h-4 w-4" /> Menunggu Persetujuan
+                            <TbClock className="mr-2 h-4 w-4" /> Menunggu
+                            Persetujuan
                           </DropdownMenuItem>
                         ) : (
-                          <DropdownMenuItem onClick={() => handleToggleActive(service.id)}>
+                          <DropdownMenuItem
+                            onClick={() => handleToggleActive(service.id)}
+                          >
                             {service.isActive ? (
                               <>
                                 <TbEyeOff className="mr-2 h-4 w-4" />
@@ -354,7 +425,10 @@ const SellerServicesPage = () => {
                           </DropdownMenuItem>
                         )}
                         <DropdownMenuSeparator />
-                        <DropdownMenuItem onClick={() => handleDeleteService(service.id)} variant="destructive">
+                        <DropdownMenuItem
+                          onClick={() => handleDeleteService(service.id)}
+                          variant="destructive"
+                        >
                           <TbTrash className="mr-2 h-4 w-4" />
                           Hapus
                         </DropdownMenuItem>
@@ -363,9 +437,24 @@ const SellerServicesPage = () => {
                   </div>
 
                   <div className="absolute top-2 left-2 flex gap-2">
-                    <Badge variant={service.isActive ? "default" : "secondary"}>{service.isActive ? "Aktif" : "Nonaktif"}</Badge>
-                    <Badge variant={service.status === "PENDING" ? "secondary" : service.status === "REJECTED" ? "destructive" : "outline"} className="bg-white/90">
-                      {service.status === "PENDING" ? "Menunggu" : service.status === "REJECTED" ? "Ditolak" : "Diterima"}
+                    <Badge variant={service.isActive ? "default" : "secondary"}>
+                      {service.isActive ? "Aktif" : "Nonaktif"}
+                    </Badge>
+                    <Badge
+                      variant={
+                        service.status === "PENDING"
+                          ? "secondary"
+                          : service.status === "REJECTED"
+                          ? "destructive"
+                          : "outline"
+                      }
+                      className="bg-white/90"
+                    >
+                      {service.status === "PENDING"
+                        ? "Menunggu"
+                        : service.status === "REJECTED"
+                        ? "Ditolak"
+                        : "Diterima"}
                     </Badge>
                     <Badge variant="outline" className="bg-white/90">
                       {categoryNames[service.category]}
@@ -374,15 +463,27 @@ const SellerServicesPage = () => {
                 </div>
 
                 <CardContent className="p-4">
-                  <h3 className="font-semibold text-foreground mb-2 line-clamp-2">{service.title}</h3>
+                  <h3 className="font-semibold text-foreground mb-2 line-clamp-2">
+                    {service.title}
+                  </h3>
 
-                  <p className="text-sm text-muted-foreground mb-4 line-clamp-2">{service.description}</p>
+                  <p className="text-sm text-muted-foreground mb-4 line-clamp-2">
+                    {service.description}
+                  </p>
 
                   <div className="flex items-center justify-between text-sm mb-3">
                     <div className="flex items-center gap-1">
                       <TbStar className="h-4 w-4 fill-yellow-400 text-yellow-400" />
-                      <span className="font-medium">{Number(service.avgRating) > 0 ? Number(service.avgRating).toFixed(1) : "Baru"}</span>
-                      {service.totalReviews > 0 && <span className="text-muted-foreground">({service.totalReviews})</span>}
+                      <span className="font-medium">
+                        {Number(service.avgRating) > 0
+                          ? Number(service.avgRating).toFixed(1)
+                          : "Baru"}
+                      </span>
+                      {service.totalReviews > 0 && (
+                        <span className="text-muted-foreground">
+                          ({service.totalReviews})
+                        </span>
+                      )}
                     </div>
 
                     <div className="flex items-center gap-1 text-muted-foreground">
@@ -394,9 +495,15 @@ const SellerServicesPage = () => {
                   <div className="flex items-center justify-between pt-3 border-t">
                     <div>
                       <p className="text-xs text-muted-foreground">Harga</p>
-                      <p className="font-bold text-primary">Rp {service.price.toLocaleString("id-ID")}</p>
+                      <p className="font-bold text-primary">
+                        Rp {service.price.toLocaleString("id-ID")}
+                      </p>
                     </div>
-                    <Button variant="outline" size="sm" onClick={() => router.push(`/services/${service.id}`)}>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => router.push(`/services/${service.id}`)}
+                    >
                       Lihat Detail
                     </Button>
                   </div>
@@ -407,7 +514,13 @@ const SellerServicesPage = () => {
         )}
 
         {/* Form Drawer */}
-        <ServiceForm open={formOpen} onOpenChange={handleFormClose} onSubmit={editingService ? handleUpdateService : handleCreateService} initialData={editingService || undefined} mode={editingService ? "edit" : "create"} />
+        <ServiceForm
+          open={formOpen}
+          onOpenChange={handleFormClose}
+          onSubmit={editingService ? handleUpdateService : handleCreateService}
+          initialData={editingService || undefined}
+          mode={editingService ? "edit" : "create"}
+        />
       </div>
     </SellerLayout>
   );

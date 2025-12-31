@@ -245,8 +245,7 @@ const Header = () => {
                   <Button className="w-full">
                     <TbTools className="text-white" />
                     <Link
-                      href="/seller/
-                    dashboard"
+                      href="/seller/dashboard"
                       className="font-bold text-xs"
                     >
                       Jadi Penyedia

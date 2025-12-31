@@ -32,6 +32,12 @@ import {
   TbCheck,
 } from "react-icons/tb";
 import Link from "next/link";
+import {
+  InputOTP,
+  InputOTPGroup,
+  InputOTPSeparator,
+  InputOTPSlot,
+} from "@/components/ui/input-otp";
 
 const SellerActivate = () => {
   const { user, loading, isAuthenticated, activateSellerMode } = useAuth();
@@ -93,8 +99,8 @@ const SellerActivate = () => {
   };
 
   const handleVerifyOtp = async () => {
-    if (!otpInput) {
-      toast.error("Masukkan kode OTP");
+    if (!otpInput || otpInput.length < 6) {
+      toast.error("Masukkan 6 digit kode OTP");
       return;
     }
 
@@ -477,16 +483,26 @@ const SellerActivate = () => {
             </div>
           ) : (
             <div className="space-y-4 py-4">
-              <div className="space-y-2">
-                <Label htmlFor="otp">Kode Verifikasi (OTP)</Label>
-                <Input
-                  id="otp"
-                  placeholder="123456"
-                  maxLength={6}
-                  className="text-center text-lg tracking-widest"
-                  value={otpInput}
-                  onChange={(e) => setOtpInput(e.target.value)}
-                />
+              <div className="space-y-2 text-center">
+                <Label htmlFor="otp" className="mb-2 block">
+                  Kode Verifikasi (OTP)
+                </Label>
+                <div className="flex justify-center">
+                  <InputOTP
+                    maxLength={6}
+                    value={otpInput}
+                    onChange={(value) => setOtpInput(value)}
+                  >
+                    <InputOTPGroup>
+                      <InputOTPSlot index={0} />
+                      <InputOTPSlot index={1} />
+                      <InputOTPSlot index={2} />
+                      <InputOTPSlot index={3} />
+                      <InputOTPSlot index={4} />
+                      <InputOTPSlot index={5} />
+                    </InputOTPGroup>
+                  </InputOTP>
+                </div>
               </div>
             </div>
           )}
