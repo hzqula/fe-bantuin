@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 
 // FIX: Tambahkan fallback http://localhost:5500/api agar aman saat dev
-const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5500/api";
+const API_URL = process.env.NEXT_PUBLIC_API_URL;
 
 export async function GET(
   request: NextRequest,

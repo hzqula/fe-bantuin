@@ -5,20 +5,16 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { useAuth } from "@/contexts/AuthContext";
 import PublicLayout from "@/components/layouts/PublicLayout";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
 import {
   TbLoader,
   TbAlertCircle,
-  TbX,
   TbFileUpload,
-  TbPhotoPlus,
   TbTrash,
+  TbFileDescription, // Icon baru untuk file
 } from "react-icons/tb";
 import { uploadBuyerOrderPhoto, deleteFile } from "@/lib/upload";
-import Image from "next/image";
 import {
   Dialog,
   DialogContent,
@@ -81,12 +77,9 @@ const CreateOrderContent = () => {
         setSelectedFileForUpload(file);
       });
       reader.readAsDataURL(file);
-      // Reset input
       e.target.value = "";
     } else {
-      // Direct upload for non-images
       await processFileUpload(file);
-      // Reset input
       e.target.value = "";
     }
   };
@@ -154,13 +147,10 @@ const CreateOrderContent = () => {
     if (!attachment) return;
 
     try {
-      // Delete file from storage
       await deleteFile(attachment.path);
-      // Remove from state
       setAttachments((prev) => prev.filter((_, i) => i !== index));
     } catch (err) {
       setError(err instanceof Error ? err.message : "Gagal menghapus file");
-      // Still remove from UI even if delete fails (file might already be deleted)
       setAttachments((prev) => prev.filter((_, i) => i !== index));
     }
   };
@@ -188,7 +178,6 @@ const CreateOrderContent = () => {
       const data = await res.json();
 
       if (data.success) {
-        // Redirect ke halaman detail order untuk pembayaran
         router.push(`/orders/${data.data.id}`);
       } else {
         setError(data.error || "Gagal membuat pesanan");
@@ -200,155 +189,164 @@ const CreateOrderContent = () => {
     }
   };
 
+  // Helper untuk mengambil nama file dari URL
+  const getFileName = (url: string) => {
+    try {
+      const decodedUrl = decodeURIComponent(url);
+      return decodedUrl.split("/").pop() || "File Attachment";
+    } catch (e) {
+      return "File Attachment";
+    }
+  };
+
   return (
     <PublicLayout>
-      <div className="container mx-auto px-4 py-8 max-w-2xl">
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-2xl font-display text-primary">
-              Detail Pesanan
-            </CardTitle>
-            <p className="text-muted-foreground">
-              Jelaskan kebutuhan Anda kepada penyedia jasa secara detail.
-            </p>
-          </CardHeader>
-          <CardContent>
-            <form onSubmit={handleSubmit} className="space-y-6">
-              <div className="space-y-2">
-                <Label htmlFor="requirements">
-                  Kebutuhan Pekerjaan{" "}
-                  <span className="text-destructive">*</span>
-                </Label>
+      <div className="container mx-auto px-4 py-8">
+        <div className="mb-8">
+          <h1 className="text-3xl md:text-4xl font-extrabold tracking-tight text-foreground leading-tight font-display">
+            Detail Pesanan
+          </h1>
+          <p className="text-muted-foreground text-sm">
+            Lengkapi formulir di bawah ini agar penyedia jasa dapat memahami
+            kebutuhan Anda dengan baik.
+          </p>
+        </div>
+
+        <form onSubmit={handleSubmit}>
+          {/* Main Grid Layout: 2 Columns on Desktop, 1 on Mobile */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mb-8">
+            {/* COLUMN 1: REQUIREMENTS */}
+            <div className="space-y-4 h-full flex flex-col">
+              <Label htmlFor="requirements" className="text-base font-semibold">
+                Kebutuhan Pekerjaan <span className="text-destructive">*</span>
+              </Label>
+              <div className="flex-1 flex flex-col gap-2">
                 <Textarea
                   id="requirements"
-                  placeholder="Contoh: Saya butuh desain logo yang minimalis dengan warna biru..."
+                  placeholder="Jelaskan secara detail apa yang Anda butuhkan. Contoh: Warna preferensi, gaya desain, referensi, atau instruksi khusus lainnya..."
                   value={requirements}
                   onChange={(e) => setRequirements(e.target.value)}
-                  className="min-h-[150px]"
+                  className="flex-1 min-h-[300px] bg-background resize-none p-4 leading-relaxed placeholder:text-xs md:placeholder:text-sm  border-primary"
                   required
                 />
-                <p className="text-xs text-muted-foreground">
-                  Minimal 20 karakter. Semakin detail semakin baik.
+                <p className="text-xs text-muted-foreground text-right">
+                  Minimal ({requirements.length} / 20 karakter)
                 </p>
               </div>
+            </div>
 
-              <div className="space-y-4">
-                <Label>Lampiran Pendukung (Opsional)</Label>
+            {/* COLUMN 2: ATTACHMENTS */}
+            <div className="space-y-4">
+              <Label className="text-base font-semibold">
+                Lampiran File (Opsional)
+              </Label>
 
-                <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
-                  {/* Attachments List */}
-                  {attachments.map((attachment, idx) => {
-                    const isImage = /\.(jpg|jpeg|png|gif|webp)$/i.test(
-                      attachment.url
-                    );
-                    return (
+              {/* Upload Area */}
+              <div
+                onClick={() => !uploading && fileInputRef.current?.click()}
+                className={`
+                  relative border-2 bg-background border-dashed border-primary p-8
+                  flex flex-col items-center justify-center text-center cursor-pointer transition-all
+                  hover:bg-muted/50
+                  ${
+                    uploading
+                      ? "border-muted-foreground/20 opacity-50 cursor-not-allowed"
+                      : "border-muted-foreground/30 hover:border-primary"
+                  }
+                `}
+              >
+                {uploading ? (
+                  <div className="flex flex-col items-center text-muted-foreground">
+                    <TbLoader className="h-8 w-8 animate-spin mb-3 text-primary" />
+                    <span className="text-sm font-medium">Mengupload...</span>
+                  </div>
+                ) : (
+                  <>
+                    <div className="bg-background p-3 rounded-full border border-primary mb-3">
+                      <TbFileUpload className="h-6 w-6 text-primary" />
+                    </div>
+                    <p className="text-sm font-medium text-foreground mb-1">
+                      Klik untuk upload file
+                    </p>
+                    <p className="text-xs text-muted-foreground">
+                      Gambar (JPG, PNG) atau Dokumen (PDF, DOCX)
+                    </p>
+                  </>
+                )}
+                <input
+                  ref={fileInputRef}
+                  type="file"
+                  accept="image/*,.pdf,.doc,.docx"
+                  onChange={handleFileSelect}
+                  className="hidden"
+                  disabled={uploading}
+                />
+              </div>
+
+              {/* Attachments List (Preview Names Only) */}
+              {attachments.length > 0 && (
+                <div className="space-y-3 mt-4">
+                  <Label className="text-sm text-secondary">
+                    File Terlampir ({attachments.length})
+                  </Label>
+                  <div className="space-y-2">
+                    {attachments.map((attachment, idx) => (
                       <div
                         key={idx}
-                        className="relative group aspect-square rounded-lg overflow-hidden border border-border bg-muted"
+                        className="flex items-center justify-between p-3 bg-card border border-border"
                       >
-                        {isImage ? (
-                          <Image
-                            src={attachment.url}
-                            alt={`Attachment ${idx + 1}`}
-                            fill
-                            className="object-cover"
-                            sizes="(max-width: 640px) 50vw, 33vw"
-                          />
-                        ) : (
-                          <div className="w-full h-full flex flex-col items-center justify-center p-2 text-center">
-                            <TbFileUpload className="h-8 w-8 text-muted-foreground mb-1" />
-                            <p className="text-[10px] text-muted-foreground w-full truncate px-1 break-all">
-                              {attachment.url.split("/").pop()}
-                            </p>
+                        <div className="flex items-center gap-3 overflow-hidden">
+                          <div className="h-8 w-8 rounded bg-primary/10 flex items-center justify-center shrink-0">
+                            <TbFileDescription className="h-5 w-5 text-primary" />
                           </div>
-                        )}
-                        <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
-                          <Button
-                            type="button"
-                            size="icon"
-                            variant="destructive"
-                            onClick={() => handleRemoveAttachment(idx)}
-                            className="rounded-full h-8 w-8"
-                          >
-                            <TbTrash className="h-4 w-4" />
-                          </Button>
-                        </div>
-                      </div>
-                    );
-                  })}
-
-                  {/* Add Button */}
-                  {attachments.length < 5 && (
-                    <div
-                      onClick={() =>
-                        !uploading && fileInputRef.current?.click()
-                      }
-                      className={`
-                         relative aspect-square rounded-lg border-2 border-dashed 
-                         flex flex-col items-center justify-center cursor-pointer transition-all
-                         ${
-                           uploading
-                             ? "border-gray-200  opacity-50 cursor-not-allowed"
-                             : "border-gray-300 hover:border-primary hover:bg-primary/5"
-                         }
-                       `}
-                    >
-                      {uploading ? (
-                        <div className="flex flex-col items-center text-muted-foreground">
-                          <TbLoader className="h-6 w-6 animate-spin mb-2" />
-                          <span className="text-[10px]">Mengupload...</span>
-                        </div>
-                      ) : (
-                        <div className="flex flex-col items-center text-muted-foreground gap-2">
-                          <TbPhotoPlus className="h-8 w-8" />
-                          <span className="text-xs font-medium text-center">
-                            Tambah
-                            <br />
-                            Lampiran
+                          <span className="text-sm text-foreground truncate font-medium max-w-[200px] sm:max-w-[250px]">
+                            {getFileName(attachment.url)}
                           </span>
                         </div>
-                      )}
-                      <input
-                        ref={fileInputRef}
-                        type="file"
-                        accept="image/*,.pdf,.doc,.docx"
-                        onChange={handleFileSelect}
-                        className="hidden"
-                      />
-                    </div>
-                  )}
-                </div>
-
-                <p className="text-xs text-muted-foreground">
-                  Upload file pendukung untuk membantu penyedia jasa memahami
-                  kebutuhan Anda
-                </p>
-              </div>
-
-              {error && (
-                <div className="bg-destructive/10 text-destructive p-3 rounded-md flex items-center gap-2 text-sm">
-                  <TbAlertCircle /> {error}
+                        <Button
+                          type="button"
+                          size="icon"
+                          variant="ghost"
+                          onClick={() => handleRemoveAttachment(idx)}
+                          className="h-8 w-8 text-muted-foreground hover:text-destructive hover:bg-destructive/10"
+                        >
+                          <TbTrash className="h-4 w-4" />
+                        </Button>
+                      </div>
+                    ))}
+                  </div>
                 </div>
               )}
+            </div>
+          </div>
 
-              <Button
-                type="submit"
-                className="w-full"
-                size="lg"
-                disabled={loading || requirements.length < 20}
-              >
-                {loading ? (
-                  <>
-                    <TbLoader className="animate-spin mr-2" /> Memproses...
-                  </>
-                ) : (
-                  "Buat Pesanan & Lanjut Pembayaran"
-                )}
-              </Button>
-            </form>
-          </CardContent>
-        </Card>
+          {/* Bottom Section (Full Width) */}
+          <div className="space-y-6 pt-6 border-t border-primary">
+            {error && (
+              <div className="bg-destructive/10 text-destructive p-4 rounded-lg flex items-center gap-3 text-sm">
+                <TbAlertCircle className="h-5 w-5 shrink-0" /> {error}
+              </div>
+            )}
+
+            <Button
+              type="submit"
+              className="w-full"
+              size="lg"
+              disabled={loading || requirements.length < 20}
+            >
+              {loading ? (
+                <>
+                  <TbLoader className="animate-spin mr-2" /> Memproses...
+                </>
+              ) : (
+                "Lanjutkan ke Pembayaran"
+              )}
+            </Button>
+          </div>
+        </form>
       </div>
+
+      {/* Cropper Modal */}
       <Dialog open={isCropping} onOpenChange={setIsCropping}>
         <DialogContent className="sm:max-w-md">
           <DialogHeader>
@@ -375,7 +373,7 @@ const CreateOrderContent = () => {
 
           <div className="py-4 space-y-4">
             <div className="flex items-center gap-2">
-              <span className="text-sm text-muted-foreground">Zoom</span>
+              <span className="text-sm text-muted-foreground w-12">Zoom</span>
               <Slider
                 value={[zoom]}
                 min={1}
@@ -386,7 +384,7 @@ const CreateOrderContent = () => {
               />
             </div>
             <div className="flex items-center gap-2">
-              <span className="text-sm text-muted-foreground">Rotasi</span>
+              <span className="text-sm text-muted-foreground w-12">Rotasi</span>
               <Slider
                 value={[rotation]}
                 min={0}

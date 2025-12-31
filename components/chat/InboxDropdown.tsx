@@ -17,11 +17,7 @@ const InboxDropdown = () => {
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
-        <Button
-          variant="ghost"
-          size="icon"
-          className="relative rounded-full hover:bg-gray-100 text-gray-600"
-        >
+        <Button variant="ghost" size="icon" className="relative rounded-full">
           <TbMail className="h-6 w-6" />
           {unreadCount > 0 && (
             <span className="absolute top-0 right-0 h-4 w-4 bg-red-500 rounded-full text-[10px] text-white flex items-center justify-center border border-white">

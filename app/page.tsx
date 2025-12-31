@@ -20,10 +20,7 @@ function HomePageContent() {
     const fetchData = async () => {
       try {
         // Fetch secara paralel agar lebih cepat
-        const [servicesRes, sellersRes] = await Promise.all([
-          fetch("/api/services/featured"),
-          fetch("/api/users/top-sellers"),
-        ]);
+        const [servicesRes, sellersRes] = await Promise.all([fetch("/api/services/featured"), fetch("/api/users/top-sellers")]);
 
         const servicesData = await servicesRes.json();
         const sellersData = await sellersRes.json();
@@ -40,8 +37,26 @@ function HomePageContent() {
     fetchData();
   }, []);
 
+  // Structured Data untuk SEO
+  const structuredData = {
+    "@context": "https://schema.org",
+    "@type": "WebSite",
+    name: "Bantuin",
+    alternateName: "Bantuin Campus",
+    url: "https://bantuin-campus.me",
+    description: "Marketplace jasa mahasiswa UIN Suska Riau yang menghubungkan freelancer kampus dengan proyek akademik, tugas, desain, dan pekerjaan digital.",
+    potentialAction: {
+      "@type": "SearchAction",
+      target: "https://bantuin-campus.me/services?q={search_term_string}",
+      "query-input": "required name=search_term_string",
+    },
+  };
+
   return (
     <PublicLayout>
+      {/* JSON-LD Structured Data */}
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(structuredData) }} />
+
       <Hero />
 
       {/* Section: Layanan Unggulan */}
@@ -49,12 +64,8 @@ function HomePageContent() {
         <div className="container mx-auto px-4">
           <div className="flex justify-between items-end mb-8">
             <div>
-              <h2 className="text-3xl font-bold font-display text-foreground">
-                Layanan Pilihan
-              </h2>
-              <p className="text-muted-foreground mt-2">
-                Jasa terbaik dengan rating tertinggi dari mahasiswa
-              </p>
+              <h2 className="text-3xl font-bold font-display text-foreground">Layanan Pilihan</h2>
+              <p className="text-muted-foreground mt-2">Jasa terbaik dengan rating tertinggi dari mahasiswa</p>
             </div>
             <Link href="/services">
               <Button variant="ghost" className="hidden md:flex gap-2">
@@ -74,9 +85,7 @@ function HomePageContent() {
               ))}
             </div>
           ) : (
-            <div className="text-center py-10 text-muted-foreground">
-              Belum ada jasa yang ditampilkan.
-            </div>
+            <div className="text-center py-10 text-muted-foreground">Belum ada jasa yang ditampilkan.</div>
           )}
 
           <div className="mt-8 text-center md:hidden">
@@ -96,12 +105,8 @@ function HomePageContent() {
             <span className="inline-flex items-center justify-center p-3 bg-yellow-100 rounded-full mb-4">
               <TbTrophy className="h-6 w-6 text-yellow-600" />
             </span>
-            <h2 className="text-3xl font-bold font-display text-foreground mb-2">
-              Penyedia Terpopuler
-            </h2>
-            <p className="text-muted-foreground">
-              Mahasiswa dengan reputasi terbaik bulan ini
-            </p>
+            <h2 className="text-3xl font-bold font-display text-foreground mb-2">Penyedia Terpopuler</h2>
+            <p className="text-muted-foreground">Mahasiswa dengan reputasi terbaik bulan ini</p>
           </div>
 
           {loading ? (
@@ -111,29 +116,18 @@ function HomePageContent() {
           ) : topSellers.length > 0 ? (
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
               {topSellers.map((seller: any, index) => (
-                <Card
-                  key={seller.id}
-                  className="hover:shadow-lg transition-all duration-300 border-none shadow-sm group"
-                >
+                <Card key={seller.id} className="hover:shadow-lg transition-all duration-300 border-none shadow-sm group">
                   <CardContent className="p-6 text-center flex flex-col items-center">
                     <div className="relative mb-4">
-                      <div className="absolute -top-2 -right-2 w-8 h-8 bg-primary text-white rounded-full flex items-center justify-center font-bold text-sm shadow-md z-10 border-2 border-white">
-                        #{index + 1}
-                      </div>
+                      <div className="absolute -top-2 -right-2 w-8 h-8 bg-primary text-white rounded-full flex items-center justify-center font-bold text-sm shadow-md z-10 border-2 border-white">#{index + 1}</div>
                       <Avatar className="w-24 h-24 border-4 border-white shadow-md group-hover:scale-105 transition-transform">
                         <AvatarImage src={seller.profilePicture} />
-                        <AvatarFallback className="bg-primary/10 text-primary text-2xl">
-                          {seller.fullName[0]}
-                        </AvatarFallback>
+                        <AvatarFallback className="bg-primary/10 text-primary text-2xl">{seller.fullName[0]}</AvatarFallback>
                       </Avatar>
                     </div>
 
-                    <h3 className="font-bold text-lg text-foreground truncate w-full">
-                      {seller.fullName}
-                    </h3>
-                    <p className="text-sm text-muted-foreground mb-3 truncate w-full">
-                      {seller.major || "Mahasiswa UIN Suska"}
-                    </p>
+                    <h3 className="font-bold text-lg text-foreground truncate w-full">{seller.fullName}</h3>
+                    <p className="text-sm text-muted-foreground mb-3 truncate w-full">{seller.major || "Mahasiswa UIN Suska"}</p>
 
                     <div className="flex items-center justify-center gap-4 w-full py-3  rounded-lg">
                       <div className="text-center">
@@ -141,18 +135,12 @@ function HomePageContent() {
                           <TbStar className="h-4 w-4 text-yellow-400 fill-yellow-400" />
                           {Number(seller.avgRating).toFixed(1)}
                         </div>
-                        <div className="text-[10px] text-muted-foreground uppercase tracking-wide">
-                          Rating
-                        </div>
+                        <div className="text-[10px] text-muted-foreground uppercase tracking-wide">Rating</div>
                       </div>
                       <div className="w-px h-8 bg-gray-200"></div>
                       <div className="text-center">
-                        <div className="font-bold text-foreground">
-                          {seller.totalOrdersCompleted}
-                        </div>
-                        <div className="text-[10px] text-muted-foreground uppercase tracking-wide">
-                          Selesai
-                        </div>
+                        <div className="font-bold text-foreground">{seller.totalOrdersCompleted}</div>
+                        <div className="text-[10px] text-muted-foreground uppercase tracking-wide">Selesai</div>
                       </div>
                     </div>
                   </CardContent>
@@ -160,9 +148,7 @@ function HomePageContent() {
               ))}
             </div>
           ) : (
-            <div className="text-center py-10 text-muted-foreground">
-              Belum ada data penyedia.
-            </div>
+            <div className="text-center py-10 text-muted-foreground">Belum ada data penyedia.</div>
           )}
         </div>
       </section>
