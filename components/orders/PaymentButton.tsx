@@ -8,6 +8,7 @@ import { useRouter } from "next/navigation";
 interface PaymentButtonProps {
   orderId: string;
   onSuccess?: () => void;
+  price: number;
 }
 
 declare global {
@@ -16,7 +17,7 @@ declare global {
   }
 }
 
-const PaymentButton = ({ orderId, onSuccess }: PaymentButtonProps) => {
+const PaymentButton = ({ orderId, onSuccess, price }: PaymentButtonProps) => {
   const [loading, setLoading] = useState(false);
   const router = useRouter();
 
@@ -94,11 +95,20 @@ const PaymentButton = ({ orderId, onSuccess }: PaymentButtonProps) => {
     }
   };
 
+  const formatPrice = (price: number) => {
+    return new Intl.NumberFormat("id-ID", {
+      style: "currency",
+      currency: "IDR",
+      minimumFractionDigits: 0,
+    }).format(price);
+  };
+
   return (
     <Button
       onClick={handlePayment}
       disabled={loading}
-      className="w-full bg-primary hover:bg-primary/90"
+      size="lg"
+      className="w-full font-bold bg-primary hover:bg-primary/90"
     >
       {loading ? (
         <>
@@ -106,7 +116,8 @@ const PaymentButton = ({ orderId, onSuccess }: PaymentButtonProps) => {
         </>
       ) : (
         <>
-          <TbCreditCard className="mr-2" /> Bayar Sekarang
+          <TbCreditCard className="mr-2" />
+          {formatPrice(price)}
         </>
       )}
     </Button>

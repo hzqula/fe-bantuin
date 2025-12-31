@@ -8,7 +8,6 @@ import ServiceFilters, {
 } from "@/components/services/ServiceFilters";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import {
   Select,
   SelectContent,
@@ -30,6 +29,7 @@ import {
   TbAdjustmentsHorizontal,
   TbSearch,
 } from "react-icons/tb";
+import { Footer } from "@/components/Footer";
 
 interface Service {
   id: string;
@@ -122,14 +122,14 @@ const ServicesPage = () => {
 
   return (
     <PublicLayout>
-      <div className="min-h-screen  py-8">
+      <div className="min-h-screen py-8">
         <div className="container mx-auto px-4">
           {/* Header */}
-          <div className="mb-8">
-            <h1 className="text-3xl font-bold text-foreground mb-4">
+          <div className="mb-4">
+            <h1 className="text-2xl md:text-3xl font-extrabold font-display text-foreground mb-2">
               Jelajahi Jasa
             </h1>
-            <p className="text-gray-600">
+            <p className="text-gray-600 text-sm">
               Temukan {pagination.total} jasa profesional dari mahasiswa UIN
               Suska Riau
             </p>
@@ -138,13 +138,13 @@ const ServicesPage = () => {
           {/* Search Bar */}
           <div className="mb-6">
             <div className="relative">
-              <TbSearch className="absolute left-4 top-1/2 h-5 w-5 -translate-y-1/2 text-gray-400" />
+              <TbSearch className="absolute left-4 top-1/2 h-4 w-4 md:h-5 md:w-5 -translate-y-1/2 text-secondary" />
               <Input
                 type="search"
                 placeholder="Cari jasa yang kamu butuhkan..."
                 value={searchQuery}
                 onChange={(e) => handleSearch(e.target.value)}
-                className="pl-12 h-12 text-base bg-white border-gray-300 focus:border-green-600 focus:ring-green-600"
+                className="pl-12 h-10 md:h-12 text-base bg-white  placeholder:text-sm"
               />
             </div>
           </div>
@@ -152,7 +152,7 @@ const ServicesPage = () => {
           <div className="flex gap-8">
             {/* Desktop Sidebar Filter */}
             <div className="hidden lg:block w-64 shrink-0">
-              <div className="bg-white border-2 border-primary rounded-lg p-6 sticky top-32">
+              <div className="bg-white border border-primary p-6 sticky top-32">
                 <div className="flex items-center gap-2 mb-6">
                   <TbAdjustmentsHorizontal className="h-5 w-5" />
                   <h2 className="text-lg font-semibold">Filter</h2>
@@ -177,7 +177,9 @@ const ServicesPage = () => {
                   </SheetTrigger>
                   <SheetContent side="left">
                     <SheetHeader>
-                      <SheetTitle>Filter</SheetTitle>
+                      <SheetTitle className="font-extrabold text-xl font-display">
+                        Filter
+                      </SheetTitle>
                       <SheetDescription>
                         Sesuaikan pencarian Anda
                       </SheetDescription>
@@ -193,7 +195,7 @@ const ServicesPage = () => {
               </div>
 
               {/* Sort Options */}
-              <div className="bg-primary rounded-lg p-4 mb-6 flex items-center justify-between gap-4 flex-wrap">
+              <div className="bg-primary pl-8 p-4 mb-6 flex items-center justify-between gap-4 flex-wrap">
                 <p className="text-sm text-background">
                   Menampilkan {services.length} dari {pagination.total} hasil
                 </p>
@@ -204,7 +206,7 @@ const ServicesPage = () => {
                       handleFilterChange({ ...filters, sortBy: value })
                     }
                   >
-                    <SelectTrigger className="w-[180px] bg-background">
+                    <SelectTrigger className="w-[120px] md:w-[180px] bg-background">
                       <SelectValue placeholder="Urutkan" />
                     </SelectTrigger>
                     <SelectContent>
@@ -332,6 +334,7 @@ const ServicesPage = () => {
           </div>
         </div>
       </div>
+      <Footer />
     </PublicLayout>
   );
 };

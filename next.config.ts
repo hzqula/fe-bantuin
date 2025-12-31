@@ -1,7 +1,7 @@
 import type { NextConfig } from "next";
 
 const nextConfig: any = {
-  output: "standalone", // Required for Docker deployment
+  output: "standalone",
   typescript: {
     ignoreBuildErrors: true,
   },
@@ -13,11 +13,15 @@ const nextConfig: any = {
       },
       {
         protocol: "https",
-        hostname: "ytrxhrltkqztkcnqlcrz.supabase.co",
+        hostname: "rskkqpmgscsyclbtnkci.supabase.co",
       },
       {
         protocol: "https",
-        hostname: "ytrxhrltkqztkcnqlcrz.storage.supabase.co",
+        hostname: "rskkqpmgscsyclbtnkci.storage.supabase.co",
+      },
+      {
+        protocol: "https",
+        hostname: "rskkqpmgscsyclbtnkci.storage.supabase.co",
       },
       { protocol: "https", hostname: "images.unsplash.com" },
       { protocol: "https", hostname: "tse2.mm.bing.net" },
@@ -26,7 +30,7 @@ const nextConfig: any = {
       { protocol: "https", hostname: "ccfqsrvqfbigkhcbtoac.supabase.co" },
       {
         protocol: "https",
-        hostname: "ytrxhrltkqztkcnqlcrz.storage.supabase.co",
+        hostname: "rskkqpmgscsyclbtnkci.storage.supabase.co",
       },
     ],
   },

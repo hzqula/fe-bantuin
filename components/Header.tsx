@@ -60,7 +60,7 @@ const Header = () => {
             height={36}
             className="md:w-10 md:h-10 lg:w-12 lg:h-12"
           />
-          <h1 className="font-display text-primary text-xl md:text-2xl lg:text-3xl">
+          <h1 className="font-display font-extrabold text-primary text-xl md:text-2xl lg:text-3xl">
             <Link href="/">
               Bant<span className="text-secondary">uin</span>
             </Link>
@@ -72,12 +72,19 @@ const Header = () => {
           <ul className="flex items-center justify-between gap-4">
             <li>
               <Button variant="link">
-                <Link href="/services">Jelajahi Jasa</Link>
+                <Link
+                  href="/services"
+                  className="font-bold text-sm md:text-base"
+                >
+                  Jelajahi Jasa
+                </Link>
               </Button>
             </li>
             <li>
               <Button variant="link">
-                <Link href="/how">Cara Kerja</Link>
+                <Link href="/how" className="font-bold text-sm md:text-base">
+                  Cara Kerja
+                </Link>
               </Button>
             </li>
           </ul>
@@ -101,7 +108,9 @@ const Header = () => {
 
               <Button className="text-sm">
                 <TbTools className="text-white" />
-                <Link href="/seller/dashboard">Jadi Penyedia</Link>
+                <Link href="/seller/dashboard" className="font-bold text-xs">
+                  Jadi Penyedia
+                </Link>
               </Button>
 
               {/* User Dropdown */}
@@ -209,15 +218,6 @@ const Header = () => {
             <div className="flex flex-col gap-2 mt-4 pt-4 border-t border-accent">
               {isAuthenticated && user ? (
                 <>
-                  <Button
-                    variant="ghost"
-                    asChild
-                    onClick={() => setMobileMenuOpen(false)}
-                  >
-                    <Link href="/notifications">
-                      <Bell className="h-4 w-4" /> Notifikasi
-                    </Link>
-                  </Button>
                   <div className="flex items-center gap-2 px-2 py-2">
                     {user.profilePicture ? (
                       <Image
@@ -244,7 +244,13 @@ const Header = () => {
 
                   <Button className="w-full">
                     <TbTools className="text-white" />
-                    <Link href="/seller/dashboard">Jadi Penyedia</Link>
+                    <Link
+                      href="/seller/
+                    dashboard"
+                      className="font-bold text-xs"
+                    >
+                      Jadi Penyedia
+                    </Link>
                   </Button>
 
                   <Button

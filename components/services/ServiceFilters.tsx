@@ -97,7 +97,7 @@ const ServiceFilters = ({ onFilterChange, onSearch }: ServiceFiltersProps) => {
   };
 
   return (
-    <div className="space-y-6 md:p-0 p-4">
+    <div className="space-y-6 md:p-0 px-4">
       {/* Category Filter */}
       <div className="space-y-2">
         <Label className="text-sm font-medium">Kategori</Label>

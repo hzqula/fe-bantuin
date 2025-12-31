@@ -49,3 +49,6 @@ ts_errors.log
 build_all.log
 build_out.txt
 build_error.log
+
+# Docker
+docker-compose.yml
