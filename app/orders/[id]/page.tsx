@@ -6,29 +6,28 @@ import { useAuth } from "@/contexts/AuthContext";
 import { useChat } from "@/contexts/ChatContext";
 import PublicLayout from "@/components/layouts/PublicLayout";
 import PaymentButton from "@/components/orders/PaymentButton";
-import {
-  Card,
-  CardContent,
-  CardHeader,
-  CardTitle,
-  CardDescription,
-} from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
+import { Calendar } from "@/components/ui/calendar"; // Import Calendar Shadcn
+import { addDays } from "date-fns"; // Import date utility
+import { id as idLocale } from "date-fns/locale"; // Import locale Indonesia
 import {
-  TbFileDescription,
   TbCoin,
   TbCalendar,
   TbUser,
   TbAlertCircle,
-  TbArrowLeft,
   TbCheck,
   TbMessageCircle,
   TbStar,
   TbClock,
   TbRefresh,
-  TbFileZip,
   TbPhoto,
+  TbFileDescription,
+  TbFileText,
+  TbTool,
+  TbPackage,
+  TbCreditCard,
+  TbCircleCheck,
 } from "react-icons/tb";
 import { Badge } from "@/components/ui/badge";
 
@@ -49,7 +48,7 @@ interface OrderDetail {
     revisions: number;
     images: string[];
     seller: {
-      id: string; // Ensure ID is here
+      id: string;
       avgRating: number;
       fullName: string;
       profilePicture: string;
@@ -186,23 +185,32 @@ const OrderDetailPage = () => {
 
   const getOrderProgress = () => {
     const statuses = [
-      { key: "DRAFT", label: "Draf" },
-      { key: "WAITING_PAYMENT", label: "Menunggu" },
-      { key: "PAID_ESCROW", label: "Dibayar" },
-      { key: "IN_PROGRESS", label: "Dalam Proses" },
-      { key: "DELIVERED", label: "Diserahkan" },
-      { key: "COMPLETED", label: "Selesai" },
+      { key: "DRAFT", label: "Draf", icon: TbFileText },
+      { key: "WAITING_PAYMENT", label: "Menunggu", icon: TbClock },
+      { key: "PAID_ESCROW", label: "Dibayar", icon: TbCreditCard },
+      { key: "IN_PROGRESS", label: "Proses", icon: TbTool },
+      { key: "DELIVERED", label: "Diserahkan", icon: TbPackage },
+      { key: "COMPLETED", label: "Selesai", icon: TbCircleCheck },
     ];
-
     const currentIndex = statuses.findIndex((s) => s.key === order.status);
     return { statuses, currentIndex };
   };
 
   const { statuses, currentIndex } = getOrderProgress();
 
+  // --- LOGIC KALENDER ---
+  const paymentDate = new Date(order.dueDate);
+  const deliveryDays = order.service.deliveryTime;
+  const completionDate = addDays(paymentDate, deliveryDays);
+
+  const dateRange = {
+    from: paymentDate,
+    to: completionDate,
+  };
+
   return (
     <PublicLayout>
-      <div className="container mx-auto px-4 py-8">
+      <div className="container mx-auto px-4 pt-8">
         <div className="mb-8">
           <div className="flex flex-col md:flex-row md:items-center gap-4">
             <h1 className="text-3xl md:text-4xl font-extrabold tracking-tight text-foreground leading-tight font-display">
@@ -212,72 +220,132 @@ const OrderDetailPage = () => {
           </div>
         </div>
 
-        {/* Order Tracking */}
-        <div className="mb-8 bg-card border border-primary py-6 px-10">
-          <h1 className="text-2xl font-display font-extrabold mb-4">
-            Status Pesanan
-          </h1>
-          <div className="flex items-center justify-between">
-            {statuses.map((status, index) => (
-              <div
-                key={status.key}
-                className="flex flex-col items-center flex-1"
-              >
-                <div className="flex items-center gap-2 w-full mb-2">
-                  {index < statuses.length - 1 && (
-                    <>
+        {/* Grid Container */}
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          {/* LEFT COLUMN */}
+          <div className="lg:col-span-2 space-y-6">
+            <div className="w-full mx-auto mb-8 bg-card border border-primary">
+              <div className="bg-teal-700 px-6 py-4">
+                <h2 className="text-2xl font-bold text-white flex items-center gap-2">
+                  Status Pesanan
+                </h2>
+              </div>
+
+              {/* Desktop View Tracking */}
+              <div className="hidden md:block p-8">
+                <div className="flex items-center justify-between">
+                  {statuses.map((status, index) => {
+                    const isActive = index <= currentIndex;
+                    const isCurrent = index === currentIndex;
+                    const Icon = status.icon;
+
+                    return (
                       <div
-                        className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-semibold ${
-                          index <= currentIndex
-                            ? "bg-primary text-primary-foreground"
-                            : "bg-muted text-muted-foreground"
-                        }`}
+                        key={status.key}
+                        className="flex items-center flex-1"
                       >
-                        {index < currentIndex ? (
-                          <TbCheck className="w-4 h-4" />
-                        ) : (
-                          index + 1
+                        <div className="flex flex-col items-center w-full">
+                          {/* Circle */}
+                          <div
+                            className={`w-10 h-10 rounded-full flex items-center justify-center transition-all ${
+                              isActive
+                                ? "bg-primary text-white"
+                                : "bg-gray-200 text-gray-400"
+                            }`}
+                          >
+                            {index < currentIndex ? (
+                              <TbCheck className="w-5 h-5" />
+                            ) : (
+                              <Icon className="w-5 h-5" />
+                            )}
+                          </div>
+
+                          {/* Label */}
+                          <p
+                            className={`text-xs font-medium mt-2 text-center ${
+                              isActive ? "text-gray-800" : "text-gray-400"
+                            }`}
+                          >
+                            {status.label}
+                          </p>
+                          {isCurrent && (
+                            <span className="text-[10px] text-teal-600 font-medium mt-0.5">
+                              Saat ini
+                            </span>
+                          )}
+                        </div>
+
+                        {/* Line */}
+                        {index < statuses.length - 1 && (
+                          <div className="flex-1 h-1 mx-2 -mt-6">
+                            <div
+                              className={`h-full ${
+                                index < currentIndex
+                                  ? "bg-teal-600"
+                                  : "bg-gray-200"
+                              }`}
+                            />
+                          </div>
                         )}
                       </div>
-                      <div
-                        className={`flex-1 h-1 ${
-                          index < currentIndex ? "bg-primary" : "bg-muted"
-                        }`}
-                      />
-                    </>
-                  )}
-                  {index === statuses.length - 1 && (
-                    <div
-                      className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-semibold ${
-                        index <= currentIndex
-                          ? "bg-primary text-primary-foreground"
-                          : "bg-muted text-muted-foreground"
-                      }`}
-                    >
-                      {index < currentIndex ? (
-                        <TbCheck className="w-4 h-4" />
-                      ) : (
-                        index + 1
-                      )}
-                    </div>
-                  )}
+                    );
+                  })}
                 </div>
-                <p
-                  className={`text-xs font-bold text-center ${
-                    index <= currentIndex
-                      ? "text-foreground"
-                      : "text-muted-foreground"
-                  }`}
-                >
-                  {status.label}
-                </p>
               </div>
-            ))}
-          </div>
-        </div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          <div className="lg:col-span-2 space-y-6">
+              {/* Mobile View Tracking */}
+              <div className="md:hidden p-6 space-y-3">
+                {statuses.map((status, index) => {
+                  const isActive = index <= currentIndex;
+                  const isCurrent = index === currentIndex;
+                  const Icon = status.icon;
+
+                  return (
+                    <div key={status.key} className="flex items-start gap-3">
+                      <div className="flex flex-col items-center">
+                        <div
+                          className={`w-8 h-8 rounded-full flex items-center justify-center ${
+                            isActive
+                              ? "bg-primary text-white"
+                              : "bg-gray-200 text-gray-400"
+                          }`}
+                        >
+                          {index < currentIndex ? (
+                            <TbCheck className="w-4 h-4" />
+                          ) : (
+                            <Icon className="w-4 h-4" />
+                          )}
+                        </div>
+                        {index < statuses.length - 1 && (
+                          <div
+                            className={`w-0.5 h-8 mt-1 ${
+                              index < currentIndex
+                                ? "bg-teal-600"
+                                : "bg-gray-200"
+                            }`}
+                          />
+                        )}
+                      </div>
+                      <div className="pt-1">
+                        <p
+                          className={`text-sm font-medium ${
+                            isActive ? "text-gray-800" : "text-gray-400"
+                          }`}
+                        >
+                          {status.label}
+                        </p>
+                        {isCurrent && (
+                          <span className="text-xs text-teal-600 font-medium">
+                            Sedang berlangsung
+                          </span>
+                        )}
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+
             <section>
               <div className="flex flex-col gap-6 sm:flex-row">
                 <img
@@ -307,6 +375,7 @@ const OrderDetailPage = () => {
                 </div>
               </div>
             </section>
+
             {/* Requirements Section */}
             <div>
               <h3 className="text-2xl font-display font-extrabold">
@@ -409,9 +478,75 @@ const OrderDetailPage = () => {
             </div>
           </div>
 
-          <div className="lg:col-span-1">
+          {/* RIGHT COLUMN */}
+          <div className="lg:col-span-1 flex flex-col">
+            {/* KALENDER SECTION */}
+            <div className="px-10 py-6 space-y-4 border border-primary bg-card flex-1 mb-6">
+              <h1 className="text-xl font-display font-extrabold flex items-center gap-2">
+                <TbCalendar className="w-5 h-5 text-primary" /> Kalender
+                Pengerjaan
+              </h1>
+
+              <Calendar
+                mode="range"
+                selected={dateRange}
+                className="w-full"
+                locale={idLocale}
+                modifiers={{
+                  payment: paymentDate,
+                  completion: completionDate,
+                }}
+                modifiersStyles={{
+                  payment: {
+                    fontWeight: "bold",
+                    textDecoration: "underline",
+                    color: "#dc2626",
+                  },
+                  completion: {
+                    fontWeight: "bold",
+                    color: "#16a34a",
+                  },
+                }}
+              />
+
+              {/* Legend / Keterangan */}
+              <div className="space-y-2 text-xs border-t pt-3">
+                <div className="flex justify-between items-center">
+                  <span className="text-muted-foreground">
+                    Jatuh Tempo Bayar:
+                  </span>
+                  <Badge
+                    variant="outline"
+                    className="text-red-600 border-red-200 bg-red-50"
+                  >
+                    {paymentDate.toLocaleDateString("id-ID", {
+                      day: "numeric",
+                      month: "short",
+                    })}
+                  </Badge>
+                </div>
+                <div className="flex justify-between items-center">
+                  <span className="text-muted-foreground">
+                    Estimasi Selesai:
+                  </span>
+                  <Badge
+                    variant="outline"
+                    className="text-green-600 border-green-200 bg-green-50"
+                  >
+                    {completionDate.toLocaleDateString("id-ID", {
+                      day: "numeric",
+                      month: "short",
+                    })}
+                  </Badge>
+                </div>
+                <div className="flex justify-between items-center">
+                  <span className="text-muted-foreground">Durasi:</span>
+                  <span className="font-medium">{deliveryDays} Hari Kerja</span>
+                </div>
+              </div>
+            </div>
             {/* Provider Details */}
-            <div className="px-10 py-6 space-y-4 border border-primary bg-card">
+            <div className="px-10 py-6 space-y-4 border border-primary bg-card shrink-0">
               <h1 className="text-2xl font-display font-extrabold">
                 Penyedia Jasa
               </h1>

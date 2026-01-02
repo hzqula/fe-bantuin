@@ -13,7 +13,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Button } from "@/components/ui/button";
-import { SERVICE_CATEGORIES_LIST } from "@/lib/constants";
+import { SERVICE_CATEGORIES } from "@/lib/constants";
 
 interface ServiceFiltersProps {
   onFilterChange: (filters: FilterState) => void;
@@ -112,8 +112,8 @@ const ServiceFilters = ({ onFilterChange, onSearch }: ServiceFiltersProps) => {
           </SelectTrigger>
           <SelectContent>
             <SelectItem value="all">Semua Kategori</SelectItem>
-            {SERVICE_CATEGORIES_LIST.map((cat) => (
-              <SelectItem key={cat.value} value={cat.value}>
+            {SERVICE_CATEGORIES.map((cat) => (
+              <SelectItem key={cat.label} value={cat.label}>
                 {cat.label}
               </SelectItem>
             ))}

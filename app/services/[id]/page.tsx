@@ -470,7 +470,7 @@ export default function ServiceDetailPage() {
 
           {/* --- RIGHT COLUMN: Sticky Booking Card --- */}
           <div className="lg:col-span-4">
-            <div className="sticky top-36 space-y-4">
+            <div className="sticky top-36 space-y-4  mt-0 lg:mt-41">
               <div className="border border-primary overflow-hidden">
                 {/* Header */}
                 <div className="p-6 bg-teal-900">

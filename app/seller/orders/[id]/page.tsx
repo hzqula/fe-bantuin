@@ -327,14 +327,14 @@ const SellerOrderDetailPage = () => {
     },
     ...(hasRevisionHistory || isRevisionStage
       ? [
-        {
-          id: 3.5,
-          label: `Revisi Diminta (${order.revisionCount}x)`,
-          date: order.status === "REVISION" ? order.deliveredAt : undefined,
-          completed: isRevisionStage || isAfterRevision,
-          icon: RefreshCcw,
-        },
-      ]
+          {
+            id: 3.5,
+            label: `Revisi Diminta (${order.revisionCount}x)`,
+            date: order.status === "REVISION" ? order.deliveredAt : undefined,
+            completed: isRevisionStage || isAfterRevision,
+            icon: RefreshCcw,
+          },
+        ]
       : []),
     {
       id: 4,
@@ -392,8 +392,8 @@ const SellerOrderDetailPage = () => {
                     <AlertDialogHeader>
                       <AlertDialogTitle>Mulai Pengerjaan?</AlertDialogTitle>
                       <AlertDialogDescription>
-                        Status pesanan akan berubah menjadi "Dikerjakan". Pastikan
-                        Anda sudah siap memulai.
+                        Status pesanan akan berubah menjadi "Dikerjakan".
+                        Pastikan Anda sudah siap memulai.
                       </AlertDialogDescription>
                     </AlertDialogHeader>
                     <AlertDialogFooter>
@@ -409,26 +409,26 @@ const SellerOrderDetailPage = () => {
 
             {(order.status === "IN_PROGRESS" ||
               order.status === "REVISION") && (
-                <>
-                  <Button
-                    variant="outline"
-                    onClick={() => setShowProgressDialog(true)}
-                  >
-                    <Plus className="mr-2 h-4 w-4" /> Update Progress
-                  </Button>
-                  <Button onClick={() => setShowDeliverDialog(true)}>
-                    <Send className="mr-2 h-4 w-4" /> Kirim Hasil
-                    {order.status === "REVISION" && (
-                      <Badge
-                        variant="secondary"
-                        className="bg-white/30 text-white ml-1"
-                      >
-                        Revisi
-                      </Badge>
-                    )}
-                  </Button>
-                </>
-              )}
+              <>
+                <Button
+                  variant="outline"
+                  onClick={() => setShowProgressDialog(true)}
+                >
+                  <Plus className="mr-2 h-4 w-4" /> Update Progress
+                </Button>
+                <Button onClick={() => setShowDeliverDialog(true)}>
+                  <Send className="mr-2 h-4 w-4" /> Kirim Hasil
+                  {order.status === "REVISION" && (
+                    <Badge
+                      variant="secondary"
+                      className="bg-white/30 text-white ml-1"
+                    >
+                      Revisi
+                    </Badge>
+                  )}
+                </Button>
+              </>
+            )}
 
             {order.status === "REVISION" && (
               <Badge
@@ -486,10 +486,11 @@ const SellerOrderDetailPage = () => {
                         </div>
                         <div className="pt-2">
                           <h4
-                            className={`font-medium ${isCompleted
-                              ? "text-foreground"
-                              : "text-muted-foreground"
-                              }`}
+                            className={`font-medium ${
+                              isCompleted
+                                ? "text-foreground"
+                                : "text-muted-foreground"
+                            }`}
                           >
                             {stage.label}
                           </h4>
@@ -626,35 +627,39 @@ const SellerOrderDetailPage = () => {
                   <TabsContent value="files" className="mt-4 space-y-6">
                     {/* Buyer Attachments */}
                     <div>
-                      <h4 className="text-sm font-medium mb-2">File dari Pembeli</h4>
+                      <h4 className="text-sm font-medium mb-2">
+                        File dari Pembeli
+                      </h4>
                       {order.attachments?.length > 0 ? (
                         <div className="space-y-2">
-                          {order.attachments.map((file: string, idx: number) => (
-                            <div
-                              key={idx}
-                              className="p-3 bg-muted/30 border rounded-lg flex items-center justify-between"
-                            >
-                              <div className="flex items-center gap-2 overflow-hidden">
-                                <FileText className="h-4 w-4 text-orange-500 shrink-0" />
-                                <span className="text-sm truncate">
-                                  Attachment {idx + 1}
-                                </span>
-                              </div>
-                              <a
-                                href={file}
-                                target="_blank"
-                                rel="noopener noreferrer"
+                          {order.attachments.map(
+                            (file: string, idx: number) => (
+                              <div
+                                key={idx}
+                                className="p-3 bg-muted/30 border rounded-lg flex items-center justify-between"
                               >
-                                <Button
-                                  size="icon"
-                                  variant="ghost"
-                                  className="h-8 w-8"
+                                <div className="flex items-center gap-2 overflow-hidden">
+                                  <FileText className="h-4 w-4 text-orange-500 shrink-0" />
+                                  <span className="text-sm truncate">
+                                    Attachment {idx + 1}
+                                  </span>
+                                </div>
+                                <a
+                                  href={file}
+                                  target="_blank"
+                                  rel="noopener noreferrer"
                                 >
-                                  <Download className="h-4 w-4" />
-                                </Button>
-                              </a>
-                            </div>
-                          ))}
+                                  <Button
+                                    size="icon"
+                                    variant="ghost"
+                                    className="h-8 w-8"
+                                  >
+                                    <Download className="h-4 w-4" />
+                                  </Button>
+                                </a>
+                              </div>
+                            )
+                          )}
                         </div>
                       ) : (
                         <p className="text-sm text-muted-foreground italic">
@@ -665,35 +670,39 @@ const SellerOrderDetailPage = () => {
 
                     {/* Seller Delivery Files */}
                     <div>
-                      <h4 className="text-sm font-medium mb-2">File Hasil Kerja</h4>
+                      <h4 className="text-sm font-medium mb-2">
+                        File Hasil Kerja
+                      </h4>
                       {order.deliveryFiles?.length > 0 ? (
                         <div className="space-y-2">
-                          {order.deliveryFiles.map((file: string, idx: number) => (
-                            <div
-                              key={idx}
-                              className="p-3 bg-muted/30 border rounded-lg flex items-center justify-between"
-                            >
-                              <div className="flex items-center gap-2 overflow-hidden">
-                                <FileText className="h-4 w-4 text-blue-500 shrink-0" />
-                                <span className="text-sm truncate">
-                                  Hasil {idx + 1}
-                                </span>
-                              </div>
-                              <a
-                                href={file}
-                                target="_blank"
-                                rel="noopener noreferrer"
+                          {order.deliveryFiles.map(
+                            (file: string, idx: number) => (
+                              <div
+                                key={idx}
+                                className="p-3 bg-muted/30 border rounded-lg flex items-center justify-between"
                               >
-                                <Button
-                                  size="icon"
-                                  variant="ghost"
-                                  className="h-8 w-8"
+                                <div className="flex items-center gap-2 overflow-hidden">
+                                  <FileText className="h-4 w-4 text-blue-500 shrink-0" />
+                                  <span className="text-sm truncate">
+                                    Hasil {idx + 1}
+                                  </span>
+                                </div>
+                                <a
+                                  href={file}
+                                  target="_blank"
+                                  rel="noopener noreferrer"
                                 >
-                                  <Download className="h-4 w-4" />
-                                </Button>
-                              </a>
-                            </div>
-                          ))}
+                                  <Button
+                                    size="icon"
+                                    variant="ghost"
+                                    className="h-8 w-8"
+                                  >
+                                    <Download className="h-4 w-4" />
+                                  </Button>
+                                </a>
+                              </div>
+                            )
+                          )}
                         </div>
                       ) : (
                         <p className="text-sm text-muted-foreground italic">
@@ -705,7 +714,8 @@ const SellerOrderDetailPage = () => {
                   <TabsContent value="chat" className="mt-4">
                     <div className="space-y-3">
                       <p className="text-sm text-muted-foreground">
-                        Hubungi pembeli untuk komunikasi lebih lanjut mengenai pesanan ini.
+                        Hubungi pembeli untuk komunikasi lebih lanjut mengenai
+                        pesanan ini.
                       </p>
                       <Button
                         className="w-full"
@@ -715,13 +725,13 @@ const SellerOrderDetailPage = () => {
                               id: order.buyer.id,
                               fullName: order.buyer.fullName,
                               profilePicture: order.buyer.profilePicture || "",
-                              major: order.buyer.major || ""
+                              major: order.buyer.major || "",
                             });
                           }
                         }}
                       >
                         <Send className="mr-2 h-4 w-4" />
-                        Buka Chat dengan {order?.buyer?.fullName || 'Pembeli'}
+                        Buka Chat dengan {order?.buyer?.fullName || "Pembeli"}
                       </Button>
                     </div>
                   </TabsContent>
@@ -891,12 +901,14 @@ const SellerOrderDetailPage = () => {
         <Dialog open={showRejectDialog} onOpenChange={setShowRejectDialog}>
           <DialogContent>
             <DialogHeader>
-              <DialogTitle className="text-destructive">Tolak Pesanan</DialogTitle>
+              <DialogTitle className="text-destructive">
+                Tolak Pesanan
+              </DialogTitle>
             </DialogHeader>
             <div className="space-y-4 py-2">
               <p className="text-sm text-muted-foreground">
-                Menolak pesanan akan membatalkan transaksi dan mengembalikan dana sepenuhnya ke Pembeli.
-                Tindakan ini tidak dapat dibatalkan.
+                Menolak pesanan akan membatalkan transaksi dan mengembalikan
+                dana sepenuhnya ke Pembeli. Tindakan ini tidak dapat dibatalkan.
               </p>
               <div className="space-y-2">
                 <Label>Alasan Penolakan</Label>
@@ -906,7 +918,9 @@ const SellerOrderDetailPage = () => {
                   onChange={(e) => setRejectReason(e.target.value)}
                   rows={3}
                 />
-                <p className="text-xs text-muted-foreground">Minimal 10 karakter.</p>
+                <p className="text-xs text-muted-foreground">
+                  Minimal 10 karakter.
+                </p>
               </div>
             </div>
             <DialogFooter>

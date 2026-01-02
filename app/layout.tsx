@@ -45,8 +45,11 @@ const outfit = Andika({
 export const metadata: Metadata = {
   title: "Bantuin: Marketplace Jasa Mahasiswa UIN Suska Riau",
   description:
-    "Platform marketplace jasa yang menghubungkan mahasiswa UIN Suska Riau dengan peluang kerja freelance dan proyek akademik.",
+    "Wadah bagi mahasiswa UIN Suska Riau untuk menawarkan dan mencari jasa tanpa harus ribet lewat media sosial",
   manifest: "/manifest.json",
+  icons: {
+    icon: "/logo.svg",
+  },
 };
 
 export const viewport: Viewport = {

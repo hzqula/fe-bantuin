@@ -90,11 +90,6 @@ const SellerLayout = ({ children }: SellerLayoutProps) => {
         className="hidden lg:flex items-center text-sm text-muted-foreground"
       >
         <ol className="flex items-center gap-2">
-          <li>
-            <Link href="/" className="hover:text-foreground transition-colors">
-              Home
-            </Link>
-          </li>
           {segments.map((segment, index) => {
             // UPDATE: Skip segment 'seller'
             if (segment === "seller") return null;
@@ -149,7 +144,7 @@ const SellerLayout = ({ children }: SellerLayoutProps) => {
                   variant={active ? "secondary" : "ghost"}
                   className={`w-full justify-start gap-3 ${
                     active
-                      ? "bg-primary/10 text-primary font-medium hover:bg-primary/20"
+                      ? "bg-white border-l-2 border-l-primary text-primary font-medium hover:bg-primary/20"
                       : "text-gray-700 hover:bg-gray-100"
                   }`}
                 >
