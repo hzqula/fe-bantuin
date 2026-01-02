@@ -10,7 +10,6 @@ import ServiceForm, {
 } from "@/components/services/ServiceForm";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -26,10 +25,13 @@ import {
   TbTrash,
   TbEye,
   TbEyeOff,
-  TbClock,
   TbShoppingCart,
+  TbChevronLeft,
+  TbChevronRight,
+  TbClock,
 } from "react-icons/tb";
 import { Star } from "lucide-react";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 
 // Interface Data
 interface Service {
@@ -47,7 +49,6 @@ interface Service {
   isActive: boolean;
   status: string;
   createdAt: string;
-  // Seller info needed for the card avatar logic
   seller?: {
     fullName: string;
     profilePicture: string | null;
@@ -63,6 +64,94 @@ const categoryNames: Record<string, string> = {
   TUTOR: "Tutor",
   TECHNICAL: "Teknis",
   OTHER: "Lainnya",
+};
+
+// Komponen Slider Gambar
+const ServiceImageSlider = ({
+  images,
+  title,
+}: {
+  images: string[];
+  title: string;
+}) => {
+  const [index, setIndex] = useState(0);
+
+  // Auto slide
+  useEffect(() => {
+    if (images.length <= 1) return;
+    const interval = setInterval(() => {
+      setIndex((prev) => (prev + 1) % images.length);
+    }, 5000); // 5 seconds
+    return () => clearInterval(interval);
+  }, [images.length]);
+
+  const next = (e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIndex((prev) => (prev + 1) % images.length);
+  };
+
+  const prev = (e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIndex((prev) => (prev - 1 + images.length) % images.length);
+  };
+
+  if (!images || images.length === 0) {
+    return (
+      <div className="flex h-full items-center justify-center bg-gray-100 text-muted-foreground">
+        <span className="text-4xl">📦</span>
+      </div>
+    );
+  }
+
+  return (
+    <div className="relative w-full h-full group/slider overflow-hidden bg-gray-100">
+      <div
+        className="flex h-full transition-transform duration-500 ease-in-out"
+        style={{ transform: `translateX(-${index * 100}%)` }}
+      >
+        {images.map((img, i) => (
+          <div key={i} className="relative w-full h-full shrink-0">
+            <Image
+              src={img}
+              alt={`${title} ${i + 1}`}
+              fill
+              className="object-cover"
+              sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
+            />
+          </div>
+        ))}
+      </div>
+
+      {images.length > 1 && (
+        <>
+          <button
+            onClick={prev}
+            className="absolute left-2 top-1/2 -translate-y-1/2 bg-black/50 text-white p-1 rounded-full opacity-0 group-hover/slider:opacity-100 transition-opacity hover:bg-black/70 z-10"
+          >
+            <TbChevronLeft size={16} />
+          </button>
+          <button
+            onClick={next}
+            className="absolute right-2 top-1/2 -translate-y-1/2 bg-black/50 text-white p-1 rounded-full opacity-0 group-hover/slider:opacity-100 transition-opacity hover:bg-black/70 z-10"
+          >
+            <TbChevronRight size={16} />
+          </button>
+          <div className="absolute bottom-2 left-1/2 -translate-x-1/2 flex gap-1 z-10">
+            {images.map((_, i) => (
+              <div
+                key={i}
+                className={`w-1.5 h-1.5 rounded-full shadow-sm transition-all ${
+                  i === index ? "bg-white scale-125" : "bg-white/60"
+                }`}
+              />
+            ))}
+          </div>
+        </>
+      )}
+    </div>
+  );
 };
 
 const SellerServicesPage = () => {
@@ -138,7 +227,6 @@ const SellerServicesPage = () => {
     if (!editingService) return;
     try {
       const token = localStorage.getItem("access_token");
-      // Jika status REJECTED, reset ke PENDING saat update
       const payload =
         editingService.status === "REJECTED"
           ? { ...formData, status: "PENDING", isActive: false }
@@ -159,7 +247,7 @@ const SellerServicesPage = () => {
         setEditingService(null);
         setFormOpen(false);
         if (data.data?.status === "PENDING") {
-          toast.info("Jasa dikirim ulang untuk peninjauan.");
+          toast.info("Jasa dikirim ulang untuk peninjauan administrator.");
         } else {
           toast.success("Perubahan berhasil disimpan");
         }
@@ -250,7 +338,7 @@ const SellerServicesPage = () => {
     <SellerLayout>
       <div className="space-y-8">
         {/* Header */}
-        <div className="flex items-center justify-between">
+        <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
           <div>
             <h1 className="font-display font-extrabold text-2xl sm:text-3xl md:text-4xl lg:text-5xl text-foreground mb-2">
               Jasa Saya
@@ -285,22 +373,14 @@ const SellerServicesPage = () => {
               >
                 {/* Image Section - Aspect Ratio 4/3 */}
                 <div className="relative aspect-4/3 w-full overflow-hidden rounded-2xl mb-4 bg-gray-100 border border-gray-200">
-                  {service.images && service.images.length > 0 ? (
-                    <Image
-                      src={service.images[0]}
-                      alt={service.title}
-                      fill
-                      className="object-cover transition-transform duration-300 group-hover:scale-105"
-                      sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
-                    />
-                  ) : (
-                    <div className="w-full h-full flex items-center justify-center text-muted-foreground text-sm">
-                      No Image
-                    </div>
-                  )}
+                  {/* IMPLEMENTASI SLIDER DISINI: Mengganti logika Image lama */}
+                  <ServiceImageSlider
+                    images={service.images || []}
+                    title={service.title}
+                  />
 
                   {/* OVERLAY: Status Badges (Top Left) */}
-                  <div className="absolute top-3 left-3 flex flex-col gap-2">
+                  <div className="absolute top-3 left-3 flex flex-col gap-2 z-20 pointer-events-none">
                     <div className="flex gap-2">
                       <Badge
                         variant="secondary"
@@ -328,7 +408,7 @@ const SellerServicesPage = () => {
                   </div>
 
                   {/* OVERLAY: Action Menu (Top Right) */}
-                  <div className="absolute top-2 right-2">
+                  <div className="absolute top-2 right-2 z-20">
                     <DropdownMenu>
                       <DropdownMenuTrigger asChild>
                         <Button
