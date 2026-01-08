@@ -6,7 +6,6 @@ import Image from "next/image";
 import { useAuth } from "@/contexts/AuthContext";
 import { useChat } from "@/contexts/ChatContext";
 import SellerLayout from "@/components/layouts/SellerLayout";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
@@ -14,6 +13,10 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Textarea } from "@/components/ui/textarea";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Separator } from "@/components/ui/separator";
+import { Calendar } from "@/components/ui/calendar";
+import { addDays } from "date-fns";
+import { id as idLocale } from "date-fns/locale";
 import {
   Dialog,
   DialogContent,
@@ -22,26 +25,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import {
-  Package,
-  CheckCircle,
-  Sparkles,
-  FileText,
-  Star,
-  Shield,
-  Download,
-  Send,
-  ArrowLeft,
-  Briefcase,
-  Plus,
-  RefreshCcw,
-  Loader2,
-  X,
-} from "lucide-react";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { uploadSellerOrderPhoto } from "@/lib/upload";
-import { toast } from "sonner";
-import { AlertDialog } from "@radix-ui/react-alert-dialog";
-import {
+  AlertDialog,
   AlertDialogAction,
   AlertDialogCancel,
   AlertDialogContent,
@@ -51,6 +35,35 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
+import {
+  TbPackage,
+  TbShield,
+  TbSparkles,
+  TbFileDescription,
+  TbStar,
+  TbRefresh,
+  TbDownload,
+  TbSend,
+  TbArrowLeft,
+  TbBriefcase,
+  TbPlus,
+  TbLoader,
+  TbX,
+  TbMessageCircle,
+  TbClock,
+  TbUser,
+  TbCalendar,
+  TbCheck,
+  TbAlertCircle,
+  TbPhoto,
+  TbFileText,
+  TbCreditCard,
+  TbTool,
+  TbCircleCheck,
+} from "react-icons/tb";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { uploadSellerOrderPhoto } from "@/lib/upload";
+import { toast } from "sonner";
 
 const SellerOrderDetailPage = () => {
   const params = useParams();
@@ -106,7 +119,6 @@ const SellerOrderDetailPage = () => {
   }, [authLoading, isAuthenticated, fetchOrder, router]);
 
   const handleStartWork = async () => {
-    // Tidak perlu confirm() di sini karena sudah dihandle AlertDialog di UI
     try {
       const token = localStorage.getItem("access_token");
       await fetch(`/api/orders/${order?.id}/start`, {
@@ -273,487 +285,625 @@ const SellerOrderDetailPage = () => {
   if (loading || authLoading)
     return (
       <SellerLayout>
-        <div className="p-10 text-center">Loading...</div>
+        <div className="min-h-screen flex items-center justify-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
+        </div>
       </SellerLayout>
     );
+
   if (!order)
     return (
       <SellerLayout>
-        <div className="p-10 text-center">Order not found</div>
+        <div className="container mx-auto py-12 text-center">
+          <p className="text-xl">Pesanan tidak ditemukan</p>
+        </div>
       </SellerLayout>
     );
 
-  const getStatusProgress = (status: string) => {
-    const map: Record<string, number> = {
-      DRAFT: 10,
-      WAITING_PAYMENT: 20,
-      PAID_ESCROW: 35,
-      IN_PROGRESS: 50,
-      REVISION: 65,
-      DELIVERED: 80,
-      COMPLETED: 100,
-      CANCELLED: 0,
+  const getStatusBadge = (status: string) => {
+    const styles: Record<string, string> = {
+      DRAFT: "bg-gray-200 text-gray-700",
+      WAITING_PAYMENT: "bg-yellow-100 text-yellow-700 border-yellow-200",
+      PAID_ESCROW: "bg-blue-100 text-blue-700 border-blue-200",
+      IN_PROGRESS: "bg-purple-100 text-purple-700 border-purple-200",
+      REVISION: "bg-orange-100 text-orange-700 border-orange-200",
+      DELIVERED: "bg-orange-100 text-orange-700 border-orange-200",
+      COMPLETED: "bg-green-100 text-green-700 border-green-200",
+      CANCELLED: "bg-red-100 text-red-700 border-red-200",
     };
-    return map[status] || 0;
+    return (
+      <Badge
+        variant="outline"
+        className={`${styles[status] || "bg-gray-100"} px-3 py-1`}
+      >
+        {status.replace("_", " ")}
+      </Badge>
+    );
   };
 
-  const isRevisionStage = order.status === "REVISION";
-  const hasRevisionHistory = order.revisionCount > 0;
-  const isAfterRevision = ["DELIVERED", "COMPLETED"].includes(order.status);
+  const getOrderProgress = () => {
+    const statuses = [
+      { key: "DRAFT", label: "Draf", icon: TbFileText },
+      { key: "WAITING_PAYMENT", label: "Menunggu", icon: TbClock },
+      { key: "PAID_ESCROW", label: "Dibayar", icon: TbCreditCard },
+      { key: "IN_PROGRESS", label: "Proses", icon: TbTool },
+      { key: "DELIVERED", label: "Diserahkan", icon: TbPackage },
+      { key: "COMPLETED", label: "Selesai", icon: TbCircleCheck },
+    ];
+    const currentIndex = statuses.findIndex((s) => s.key === order.status);
+    return { statuses, currentIndex };
+  };
 
-  const trackingStages = [
-    {
-      id: 1,
-      label: "Pesanan Masuk",
-      date: order.createdAt,
-      completed: true,
-      icon: Package,
-    },
-    {
-      id: 2,
-      label: "Dibayar",
-      date: order.paidAt,
-      completed: !!order.paidAt,
-      icon: Shield,
-    },
-    {
-      id: 3,
-      label: "Pengerjaan",
-      date: undefined,
-      completed: ["IN_PROGRESS", "REVISION", "DELIVERED", "COMPLETED"].includes(
-        order.status
-      ),
-      icon: Sparkles,
-    },
-    ...(hasRevisionHistory || isRevisionStage
-      ? [
-          {
-            id: 3.5,
-            label: `Revisi Diminta (${order.revisionCount}x)`,
-            date: order.status === "REVISION" ? order.deliveredAt : undefined,
-            completed: isRevisionStage || isAfterRevision,
-            icon: RefreshCcw,
-          },
-        ]
-      : []),
-    {
-      id: 4,
-      label: "Dikirim",
-      date: order.deliveredAt,
-      completed: ["DELIVERED", "COMPLETED"].includes(order.status),
-      icon: FileText,
-    },
-    {
-      id: 5,
-      label: "Selesai",
-      date: order.completedAt,
-      completed: order.status === "COMPLETED",
-      icon: Star,
-    },
-  ];
+  const { statuses, currentIndex } = getOrderProgress();
+
+  // --- LOGIC KALENDER ---
+  const paymentDate = new Date(order.dueDate);
+  const deliveryDays = order.service.deliveryTime;
+  const completionDate = addDays(paymentDate, deliveryDays);
+
+  const dateRange = {
+    from: paymentDate,
+    to: completionDate,
+  };
 
   return (
     <SellerLayout>
-      <div className="space-y-6">
-        <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 border-b pb-6">
-          <div>
-            <Button
-              variant="ghost"
-              className="pl-0 mb-1 hover:bg-transparent hover:text-primary"
-              onClick={() => router.push("/seller/orders")}
-            >
-              <ArrowLeft className="mr-2 h-4 w-4" /> Kembali
-            </Button>
-            <h1 className="text-3xl font-bold font-display text-foreground">
-              #{order.id.substring(0, 8).toUpperCase()}
+      <div className="container mx-auto px-4 py-8">
+        <div className="mb-8">
+          <Button
+            variant="ghost"
+            className="pl-0 mb-2 hover:bg-transparent hover:text-primary text-muted-foreground"
+            onClick={() => router.push("/seller/orders")}
+          >
+            <TbArrowLeft className="mr-2 h-4 w-4" /> Kembali
+          </Button>
+          <div className="flex flex-col md:flex-row md:items-center gap-4">
+            <h1 className="text-3xl md:text-4xl font-extrabold tracking-tight text-foreground leading-tight font-display">
+              Pesanan #{order.id.substring(0, 8)}
             </h1>
-            <p className="text-muted-foreground">
-              Layanan: {order.service.title}
-            </p>
-          </div>
-
-          <div className="flex items-center gap-2">
-            {order.status === "PAID_ESCROW" && (
-              <>
-                <Button
-                  variant="destructive"
-                  onClick={() => setShowRejectDialog(true)}
-                  className="bg-red-50 text-red-600 hover:bg-red-100 border-red-200 border shadow-none"
-                >
-                  <X className="mr-2 h-4 w-4" /> Tolak
-                </Button>
-                <AlertDialog>
-                  <AlertDialogTrigger asChild>
-                    <Button size="lg">
-                      <Briefcase className="mr-2 h-4 w-4" /> Mulai Kerjakan
-                    </Button>
-                  </AlertDialogTrigger>
-                  <AlertDialogContent>
-                    <AlertDialogHeader>
-                      <AlertDialogTitle>Mulai Pengerjaan?</AlertDialogTitle>
-                      <AlertDialogDescription>
-                        Status pesanan akan berubah menjadi "Dikerjakan".
-                        Pastikan Anda sudah siap memulai.
-                      </AlertDialogDescription>
-                    </AlertDialogHeader>
-                    <AlertDialogFooter>
-                      <AlertDialogCancel>Batal</AlertDialogCancel>
-                      <AlertDialogAction onClick={handleStartWork}>
-                        Ya, Mulai
-                      </AlertDialogAction>
-                    </AlertDialogFooter>
-                  </AlertDialogContent>
-                </AlertDialog>
-              </>
-            )}
-
-            {(order.status === "IN_PROGRESS" ||
-              order.status === "REVISION") && (
-              <>
-                <Button
-                  variant="outline"
-                  onClick={() => setShowProgressDialog(true)}
-                >
-                  <Plus className="mr-2 h-4 w-4" /> Update Progress
-                </Button>
-                <Button onClick={() => setShowDeliverDialog(true)}>
-                  <Send className="mr-2 h-4 w-4" /> Kirim Hasil
-                  {order.status === "REVISION" && (
-                    <Badge
-                      variant="secondary"
-                      className="bg-white/30 text-white ml-1"
-                    >
-                      Revisi
-                    </Badge>
-                  )}
-                </Button>
-              </>
-            )}
-
-            {order.status === "REVISION" && (
-              <Badge
-                variant="outline"
-                className="text-xs py-2 px-4 bg-orange-100 text-orange-700 border-orange-300 ml-2"
-              >
-                Revisi ke-{order.revisionCount} diminta
-              </Badge>
-            )}
-
-            <Badge
-              variant="outline"
-              className="text-base py-2 px-4 bg-primary/10 text-primary border-primary/20 ml-2"
-            >
-              {order.status.replace("_", " ")}
-            </Badge>
+            {getStatusBadge(order.status)}
           </div>
         </div>
 
+        {/* Grid Container */}
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          {/* LEFT COLUMN */}
           <div className="lg:col-span-2 space-y-6">
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <Package className="h-5 w-5 text-primary" /> Status Pengerjaan
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="mb-8">
-                  <div className="flex justify-between text-sm mb-2 text-muted-foreground">
-                    <span>Progress</span>
-                    <span>{getStatusProgress(order.status)}%</span>
-                  </div>
-                  <Progress
-                    value={getStatusProgress(order.status)}
-                    className="h-2"
-                  />
-                </div>
-                <div className="space-y-6 relative pl-2">
-                  <div className="absolute left-[19px] top-2 bottom-2 w-0.5 bg-muted -z-10" />
-                  {trackingStages.map((stage, idx) => {
-                    const Icon = stage.icon;
-                    const isCompleted = stage.completed;
+            {/* TRACKING SECTION */}
+            <div className="w-full mx-auto mb-8 bg-card border border-primary">
+              <div className="bg-teal-700 px-6 py-4">
+                <h2 className="text-2xl font-bold text-white flex items-center gap-2">
+                  Status Pesanan
+                </h2>
+              </div>
 
-                    const statusClass = isCompleted
-                      ? "border-primary text-primary"
-                      : "border-muted text-muted-foreground";
+              {/* Desktop View Tracking */}
+              <div className="hidden md:block p-8">
+                <div className="flex items-center justify-between">
+                  {statuses.map((status, index) => {
+                    const isActive = index <= currentIndex;
+                    const isCurrent = index === currentIndex;
+                    const Icon = status.icon;
 
                     return (
-                      <div key={stage.id} className="flex gap-4 items-start">
-                        <div
-                          className={`w-10 h-10 rounded-full flex items-center justify-center border-2 bg-background shrink-0 ${statusClass}`}
-                        >
-                          <Icon className="h-5 w-5" />
-                        </div>
-                        <div className="pt-2">
-                          <h4
-                            className={`font-medium ${
-                              isCompleted
-                                ? "text-foreground"
-                                : "text-muted-foreground"
+                      <div
+                        key={status.key}
+                        className="flex items-center flex-1"
+                      >
+                        <div className="flex flex-col items-center w-full">
+                          <div
+                            className={`w-10 h-10 rounded-full flex items-center justify-center transition-all ${
+                              isActive
+                                ? "bg-primary text-white"
+                                : "bg-gray-200 text-gray-400"
                             }`}
                           >
-                            {stage.label}
-                          </h4>
-                          {stage.date && (
-                            <p className="text-xs text-muted-foreground">
-                              {new Date(stage.date).toLocaleDateString("id-ID")}
-                            </p>
-                          )}
-                          {stage.id === 3.5 && order.status === "REVISION" && (
-                            <p className="text-xs text-orange-600 font-medium">
-                              Menunggu Anda Menyerahkan Hasil Revisi
-                            </p>
-                          )}
-                          {stage.id === 3.5 && order.status === "DELIVERED" && (
-                            <p className="text-xs text-green-600 font-medium">
-                              Hasil Revisi Dikirim Ulang
-                            </p>
+                            {index < currentIndex ? (
+                              <TbCheck className="w-5 h-5" />
+                            ) : (
+                              <Icon className="w-5 h-5" />
+                            )}
+                          </div>
+                          <p
+                            className={`text-xs font-medium mt-2 text-center ${
+                              isActive ? "text-gray-800" : "text-gray-400"
+                            }`}
+                          >
+                            {status.label}
+                          </p>
+                          {isCurrent && (
+                            <span className="text-[10px] text-teal-600 font-medium mt-0.5">
+                              Saat ini
+                            </span>
                           )}
                         </div>
+                        {index < statuses.length - 1 && (
+                          <div className="flex-1 h-1 mx-2 -mt-6">
+                            <div
+                              className={`h-full ${
+                                index < currentIndex
+                                  ? "bg-teal-600"
+                                  : "bg-gray-200"
+                              }`}
+                            />
+                          </div>
+                        )}
                       </div>
                     );
                   })}
                 </div>
-              </CardContent>
-            </Card>
+              </div>
 
-            {order.progressLogs?.length > 0 && (
-              <Card>
-                <CardHeader>
-                  <CardTitle>Riwayat Update</CardTitle>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                  {order.progressLogs.map((log: any) => (
-                    <div
-                      key={log.id}
-                      className="bg-muted/30 p-4 rounded-lg border border-border"
-                    >
-                      <div className="flex justify-between mb-2">
-                        <h4 className="font-semibold text-sm">{log.title}</h4>
-                        <span className="text-xs text-muted-foreground">
-                          {new Date(log.createdAt).toLocaleDateString()}
-                        </span>
+              {/* Mobile View Tracking */}
+              <div className="md:hidden p-6 space-y-3">
+                {statuses.map((status, index) => {
+                  const isActive = index <= currentIndex;
+                  const isCurrent = index === currentIndex;
+                  const Icon = status.icon;
+
+                  return (
+                    <div key={status.key} className="flex items-start gap-3">
+                      <div className="flex flex-col items-center">
+                        <div
+                          className={`w-8 h-8 rounded-full flex items-center justify-center ${
+                            isActive
+                              ? "bg-primary text-white"
+                              : "bg-gray-200 text-gray-400"
+                          }`}
+                        >
+                          {index < currentIndex ? (
+                            <TbCheck className="w-4 h-4" />
+                          ) : (
+                            <Icon className="w-4 h-4" />
+                          )}
+                        </div>
+                        {index < statuses.length - 1 && (
+                          <div
+                            className={`w-0.5 h-8 mt-1 ${
+                              index < currentIndex
+                                ? "bg-teal-600"
+                                : "bg-gray-200"
+                            }`}
+                          />
+                        )}
                       </div>
-                      <p className="text-sm text-muted-foreground mb-3">
-                        {log.description}
-                      </p>
-                      {log.images?.length > 0 && (
-                        <div className="flex gap-2">
-                          {log.images.map((img: string, i: number) => {
-                            const isUrlValid = isValidImageUrl(img);
+                      <div className="pt-1">
+                        <p
+                          className={`text-sm font-medium ${
+                            isActive ? "text-gray-800" : "text-gray-400"
+                          }`}
+                        >
+                          {status.label}
+                        </p>
+                        {isCurrent && (
+                          <span className="text-xs text-teal-600 font-medium">
+                            Sedang berlangsung
+                          </span>
+                        )}
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
 
-                            return (
-                              <a
-                                href={isUrlValid ? img : "#"}
-                                target="_blank"
-                                key={i}
-                                className="block h-16 w-16 relative rounded overflow-hidden border"
-                              >
-                                {isUrlValid ? (
+            {/* SERVICE INFO SECTION */}
+            <section>
+              <div className="flex flex-col gap-6 sm:flex-row">
+                <img
+                  src={order.service.images[0] || "/placeholder.svg"}
+                  alt={order.service.title}
+                  className="h-32 w-full sm:w-48 overflow-hidden rounded-lg bg-slate-100 border border-slate-200 object-cover"
+                />
+                <div className="flex flex-1 flex-col gap-2">
+                  <div>
+                    <h3 className="text-2xl font-display font-extrabold">
+                      {order.service.title}
+                    </h3>
+                    <p className="text-sm leading-relaxed text-secondary line-clamp-2">
+                      {order.service.description}
+                    </p>
+                  </div>
+                  <div className="flex flex-wrap gap-4 text-sm text-slate-500">
+                    <Badge className="pr-4 bg-teal-900">
+                      <TbClock className="h-4 w-4" />
+                      <span>{order.service.deliveryTime} Hari Kerja</span>
+                    </Badge>
+                    <Badge className="pr-4 bg-teal-900">
+                      <TbRefresh className="h-4 w-4" />
+                      <span>{order.service.revisions} Revisi</span>
+                    </Badge>
+                  </div>
+                </div>
+              </div>
+            </section>
+
+            {/* REQUIREMENTS SECTION */}
+            <div>
+              <h3 className="text-2xl font-display font-extrabold">
+                Permintaan Pembeli
+              </h3>
+              <span className="text-sm text-foreground leading-relaxed whitespace-pre-wrap">
+                {order.requirements}
+              </span>
+            </div>
+
+            {/* FILES & ATTACHMENTS (Using Tabs style) */}
+            <div>
+              <h3 className="text-2xl font-display font-extrabold mb-4">
+                File & Lampiran
+              </h3>
+              <Tabs defaultValue="buyer-files" className="w-full">
+                <TabsList className="w-full grid grid-cols-2 mb-4">
+                  <TabsTrigger value="buyer-files">Dari Pembeli</TabsTrigger>
+                  <TabsTrigger value="seller-files">
+                    Hasil Kerja Anda
+                  </TabsTrigger>
+                </TabsList>
+
+                <TabsContent value="buyer-files">
+                  {order.attachments?.length > 0 ? (
+                    <div className="flex flex-wrap gap-3">
+                      {order.attachments.map((url: string, idx: number) => {
+                        const fileName =
+                          url.split("/").pop() || `File ${idx + 1}`;
+                        const isImage = /\.(jpg|jpeg|png|webp)$/i.test(url);
+                        return (
+                          <a
+                            key={idx}
+                            href={url}
+                            target="_blank"
+                            rel="noreferrer"
+                            className="flex items-center gap-3 border border-slate-200 bg-white px-3 py-2 transition-all hover:bg-slate-50 hover:border-primary/50 group rounded-lg"
+                          >
+                            {isImage ? (
+                              <TbPhoto className="h-5 w-5 text-blue-500" />
+                            ) : (
+                              <TbFileDescription className="h-5 w-5 text-red-500" />
+                            )}
+                            <div className="flex flex-col">
+                              <span className="text-xs font-medium text-slate-700 truncate max-w-[150px]">
+                                {fileName}
+                              </span>
+                              <span className="text-[10px] text-slate-400">
+                                Klik untuk unduh
+                              </span>
+                            </div>
+                          </a>
+                        );
+                      })}
+                    </div>
+                  ) : (
+                    <p className="text-sm text-muted-foreground italic">
+                      Tidak ada lampiran dari pembeli.
+                    </p>
+                  )}
+                </TabsContent>
+
+                <TabsContent value="seller-files">
+                  {order.deliveryFiles?.length > 0 ? (
+                    <div className="flex flex-wrap gap-3">
+                      {order.deliveryFiles.map((url: string, idx: number) => {
+                        const fileName =
+                          url.split("/").pop() || `Hasil ${idx + 1}`;
+                        return (
+                          <a
+                            key={idx}
+                            href={url}
+                            target="_blank"
+                            rel="noreferrer"
+                            className="flex items-center gap-3 border border-slate-200 bg-white px-3 py-2 transition-all hover:bg-slate-50 hover:border-primary/50 group rounded-lg"
+                          >
+                            <TbCheck className="h-5 w-5 text-green-500" />
+                            <div className="flex flex-col">
+                              <span className="text-xs font-medium text-slate-700 truncate max-w-[150px]">
+                                {fileName}
+                              </span>
+                              <span className="text-[10px] text-slate-400">
+                                Hasil kerja Anda
+                              </span>
+                            </div>
+                          </a>
+                        );
+                      })}
+                    </div>
+                  ) : (
+                    <p className="text-sm text-muted-foreground italic">
+                      Anda belum mengunggah hasil kerja.
+                    </p>
+                  )}
+                </TabsContent>
+              </Tabs>
+            </div>
+
+            {/* PROGRESS LOGS & REVISION NOTES */}
+            {(order.progressLogs?.length > 0 ||
+              (order.revisionNotes && order.revisionNotes.length > 0)) && (
+              <div className="space-y-6 pt-6 border-t">
+                {/* Revision Notes */}
+                {order.revisionNotes?.length > 0 && (
+                  <div className="border-2 border-orange-400 rounded-xl overflow-hidden">
+                    <div className="bg-orange-50 px-6 py-4 border-b border-orange-200">
+                      <h3 className="flex items-center gap-2 text-lg font-bold text-orange-800">
+                        <TbRefresh className="h-5 w-5" /> Catatan Revisi
+                      </h3>
+                    </div>
+                    <div className="p-6 space-y-4 bg-white">
+                      {order.revisionNotes.map(
+                        (note: string, index: number) => (
+                          <div
+                            key={index}
+                            className="p-4 rounded-lg bg-orange-50 border border-orange-100"
+                          >
+                            <h4 className="font-bold text-xs uppercase text-orange-700 mb-2">
+                              Revisi #{index + 1}
+                            </h4>
+                            <p className="text-sm text-foreground">{note}</p>
+                          </div>
+                        )
+                      )}
+                    </div>
+                  </div>
+                )}
+
+                {/* Progress Logs */}
+                {order.progressLogs?.length > 0 && (
+                  <div>
+                    <h3 className="text-xl font-display font-extrabold mb-4">
+                      Riwayat Update
+                    </h3>
+                    <div className="space-y-4">
+                      {order.progressLogs.map((log: any) => (
+                        <div
+                          key={log.id}
+                          className="bg-card border p-4 rounded-lg"
+                        >
+                          <div className="flex justify-between items-start mb-2">
+                            <h4 className="font-bold text-sm">{log.title}</h4>
+                            <span className="text-xs text-muted-foreground bg-muted px-2 py-1 rounded">
+                              {new Date(log.createdAt).toLocaleDateString()}
+                            </span>
+                          </div>
+                          <p className="text-sm text-muted-foreground mb-3">
+                            {log.description}
+                          </p>
+                          {log.images?.length > 0 && (
+                            <div className="flex gap-2 mt-2">
+                              {log.images.map((img: string, i: number) => (
+                                <a
+                                  key={i}
+                                  href={img}
+                                  target="_blank"
+                                  className="relative h-12 w-12 rounded border overflow-hidden hover:opacity-80 transition-opacity"
+                                >
                                   <Image
                                     src={img}
-                                    alt={`Progress ${i + 1}`}
+                                    alt="Progress"
                                     fill
                                     className="object-cover"
                                   />
-                                ) : (
-                                  <div className="flex h-full items-center justify-center text-xs text-muted-foreground text-center p-1 bg-red-100/50">
-                                    URL Invalid
-                                  </div>
-                                )}
-                              </a>
-                            );
-                          })}
+                                </a>
+                              ))}
+                            </div>
+                          )}
                         </div>
-                      )}
+                      ))}
                     </div>
-                  ))}
-                </CardContent>
-              </Card>
+                  </div>
+                )}
+              </div>
             )}
-
-            {order.revisionNotes && order.revisionNotes.length > 0 && (
-              <Card className="border-2 border-orange-400">
-                <CardHeader>
-                  <CardTitle className="flex items-center gap-2 text-orange-700">
-                    <RefreshCcw className="h-5 w-5" /> Riwayat Revisi (
-                    {order.revisionNotes.length})
-                  </CardTitle>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                  {order.revisionNotes.map((note: string, index: number) => (
-                    <div
-                      key={index}
-                      className="p-4 rounded-lg border border-orange-200 bg-orange-50/50"
-                    >
-                      <h4 className="font-semibold text-sm text-orange-700 mb-2">
-                        Permintaan Revisi ke-{index + 1}
-                      </h4>
-                      <div className="text-sm text-foreground whitespace-pre-wrap border-l-2 border-orange-400 pl-3">
-                        {note}
-                      </div>
-                    </div>
-                  ))}
-                  <p className="text-xs text-muted-foreground mt-2">
-                    Total Jatah Revisi: {order.maxRevisions}x
-                  </p>
-                </CardContent>
-              </Card>
-            )}
-
-            <Card>
-              <CardHeader>
-                <CardTitle>Requirements Pembeli</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="bg-muted/30 p-4 rounded-lg text-sm whitespace-pre-wrap text-muted-foreground">
-                  {order.requirements}
-                </div>
-              </CardContent>
-            </Card>
           </div>
 
-          <div className="lg:col-span-1 space-y-6">
-            <Card>
-              <CardHeader className="pb-3">
-                <CardTitle className="text-lg">Komunikasi & File</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <Tabs defaultValue="files" className="w-full">
-                  <TabsList className="w-full grid grid-cols-2">
-                    <TabsTrigger value="files">File</TabsTrigger>
-                    <TabsTrigger value="chat">Chat</TabsTrigger>
-                  </TabsList>
-                  <TabsContent value="files" className="mt-4 space-y-6">
-                    {/* Buyer Attachments */}
-                    <div>
-                      <h4 className="text-sm font-medium mb-2">
-                        File dari Pembeli
-                      </h4>
-                      {order.attachments?.length > 0 ? (
-                        <div className="space-y-2">
-                          {order.attachments.map(
-                            (file: string, idx: number) => (
-                              <div
-                                key={idx}
-                                className="p-3 bg-muted/30 border rounded-lg flex items-center justify-between"
-                              >
-                                <div className="flex items-center gap-2 overflow-hidden">
-                                  <FileText className="h-4 w-4 text-orange-500 shrink-0" />
-                                  <span className="text-sm truncate">
-                                    Attachment {idx + 1}
-                                  </span>
-                                </div>
-                                <a
-                                  href={file}
-                                  target="_blank"
-                                  rel="noopener noreferrer"
-                                >
-                                  <Button
-                                    size="icon"
-                                    variant="ghost"
-                                    className="h-8 w-8"
-                                  >
-                                    <Download className="h-4 w-4" />
-                                  </Button>
-                                </a>
-                              </div>
-                            )
-                          )}
-                        </div>
-                      ) : (
-                        <p className="text-sm text-muted-foreground italic">
-                          Tidak ada lampiran dari pembeli.
-                        </p>
-                      )}
-                    </div>
+          {/* RIGHT COLUMN */}
+          <div className="lg:col-span-1 flex flex-col">
+            {/* ACTIONS CARD (Replaces Payment Summary) */}
+            <div className="border border-primary px-8 py-6 bg-card mb-4 rounded-none md:rounded-lg">
+              <h2 className="text-2xl font-display font-extrabold mb-4 flex gap-2 items-center">
+                <TbBriefcase className="w-6 h-6 text-primary" /> Aksi Pesanan
+              </h2>
 
-                    {/* Seller Delivery Files */}
-                    <div>
-                      <h4 className="text-sm font-medium mb-2">
-                        File Hasil Kerja
-                      </h4>
-                      {order.deliveryFiles?.length > 0 ? (
-                        <div className="space-y-2">
-                          {order.deliveryFiles.map(
-                            (file: string, idx: number) => (
-                              <div
-                                key={idx}
-                                className="p-3 bg-muted/30 border rounded-lg flex items-center justify-between"
-                              >
-                                <div className="flex items-center gap-2 overflow-hidden">
-                                  <FileText className="h-4 w-4 text-blue-500 shrink-0" />
-                                  <span className="text-sm truncate">
-                                    Hasil {idx + 1}
-                                  </span>
-                                </div>
-                                <a
-                                  href={file}
-                                  target="_blank"
-                                  rel="noopener noreferrer"
-                                >
-                                  <Button
-                                    size="icon"
-                                    variant="ghost"
-                                    className="h-8 w-8"
-                                  >
-                                    <Download className="h-4 w-4" />
-                                  </Button>
-                                </a>
-                              </div>
-                            )
-                          )}
-                        </div>
-                      ) : (
-                        <p className="text-sm text-muted-foreground italic">
-                          Belum ada file dikirim.
-                        </p>
-                      )}
-                    </div>
-                  </TabsContent>
-                  <TabsContent value="chat" className="mt-4">
-                    <div className="space-y-3">
-                      <p className="text-sm text-muted-foreground">
-                        Hubungi pembeli untuk komunikasi lebih lanjut mengenai
-                        pesanan ini.
+              <div className="space-y-3">
+                {order.status === "PAID_ESCROW" ? (
+                  <>
+                    <div className="bg-amber-50 p-3 rounded-md border border-amber-200 text-xs text-amber-800 flex gap-2">
+                      <TbAlertCircle className="shrink-0 w-4 h-4" />
+                      <p>
+                        Buyer telah membayar. Mulai pekerjaan untuk mengubah
+                        status menjadi 'Dalam Pengerjaan'.
                       </p>
-                      <Button
-                        className="w-full"
-                        onClick={() => {
-                          if (order?.buyer) {
-                            openChatWith({
-                              id: order.buyer.id,
-                              fullName: order.buyer.fullName,
-                              profilePicture: order.buyer.profilePicture || "",
-                              major: order.buyer.major || "",
-                            });
-                          }
-                        }}
-                      >
-                        <Send className="mr-2 h-4 w-4" />
-                        Buka Chat dengan {order?.buyer?.fullName || "Pembeli"}
-                      </Button>
                     </div>
-                  </TabsContent>
-                </Tabs>
-              </CardContent>
-            </Card>
+                    <AlertDialog>
+                      <AlertDialogTrigger asChild>
+                        <Button className="w-full font-bold" size="lg">
+                          <TbBriefcase className="mr-2 h-4 w-4" /> Mulai
+                          Kerjakan
+                        </Button>
+                      </AlertDialogTrigger>
+                      <AlertDialogContent>
+                        <AlertDialogHeader>
+                          <AlertDialogTitle>Mulai Pengerjaan?</AlertDialogTitle>
+                          <AlertDialogDescription>
+                            Status pesanan akan berubah menjadi "Dikerjakan".
+                            Pastikan Anda sudah siap memulai.
+                          </AlertDialogDescription>
+                        </AlertDialogHeader>
+                        <AlertDialogFooter>
+                          <AlertDialogCancel>Batal</AlertDialogCancel>
+                          <AlertDialogAction onClick={handleStartWork}>
+                            Ya, Mulai
+                          </AlertDialogAction>
+                        </AlertDialogFooter>
+                      </AlertDialogContent>
+                    </AlertDialog>
 
-            <Card>
-              <CardContent className="p-6 flex items-center gap-4">
-                <Avatar className="h-12 w-12">
-                  <AvatarImage src={order.buyer.profilePicture} />
-                  <AvatarFallback>{order.buyer.fullName[0]}</AvatarFallback>
-                </Avatar>
-                <div>
-                  <p className="text-xs text-muted-foreground">Pembeli</p>
-                  <p className="font-medium">{order.buyer.fullName}</p>
+                    <Button
+                      variant="destructive"
+                      onClick={() => setShowRejectDialog(true)}
+                      className="w-full bg-white text-red-600 border border-red-200 hover:bg-red-50"
+                    >
+                      <TbX className="mr-2 h-4 w-4" /> Tolak Pesanan
+                    </Button>
+                  </>
+                ) : order.status === "IN_PROGRESS" ||
+                  order.status === "REVISION" ? (
+                  <>
+                    <div className="bg-blue-50 p-3 rounded-md border border-blue-200 text-xs text-blue-800 flex gap-2">
+                      <TbSparkles className="shrink-0 w-4 h-4" />
+                      <p>
+                        Pesanan sedang aktif. Update progress secara berkala
+                        agar pembeli tenang.
+                      </p>
+                    </div>
+                    <Button
+                      variant="outline"
+                      onClick={() => setShowProgressDialog(true)}
+                      className="w-full border-primary/30 hover:border-primary text-primary hover:bg-primary/5"
+                    >
+                      <TbPlus className="mr-2 h-4 w-4" /> Update Progress
+                    </Button>
+                    <Button
+                      onClick={() => setShowDeliverDialog(true)}
+                      className="w-full font-bold"
+                      size="lg"
+                    >
+                      <TbSend className="mr-2 h-4 w-4" /> Kirim Hasil Akhir
+                    </Button>
+                  </>
+                ) : (
+                  <div className="text-center p-4 bg-muted/30 rounded-lg border border-dashed">
+                    <p className="text-sm font-medium text-muted-foreground">
+                      Tidak ada aksi yang diperlukan saat ini.
+                    </p>
+                  </div>
+                )}
+              </div>
+            </div>
+
+            {/* BUYER PROFILE CARD (Replaces Provider Details) */}
+            <div className="px-10 py-6 space-y-4 border border-primary bg-card mb-4 shrink-0">
+              <h1 className="text-2xl font-display font-extrabold">
+                Informasi Pembeli
+              </h1>
+              <div className="flex items-start gap-3">
+                <div className="w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center shrink-0">
+                  <Avatar className="w-full h-full">
+                    <AvatarImage src={order.buyer.profilePicture} />
+                    <AvatarFallback>{order.buyer.fullName[0]}</AvatarFallback>
+                  </Avatar>
                 </div>
-              </CardContent>
-            </Card>
+                <div className="flex-1 min-w-0">
+                  <h4 className="font-semibold text-foreground truncate">
+                    {order.buyer.fullName}
+                  </h4>
+                  <p className="text-xs text-muted-foreground mt-0.5">
+                    Customer
+                  </p>
+                </div>
+              </div>
+
+              <Separator />
+
+              <Button
+                className="w-full gap-2"
+                variant="outline"
+                onClick={() => {
+                  if (order?.buyer) {
+                    openChatWith({
+                      id: order.buyer.id,
+                      fullName: order.buyer.fullName,
+                      profilePicture: order.buyer.profilePicture || "",
+                      major: order.buyer.major || "",
+                    });
+                  }
+                }}
+              >
+                <TbMessageCircle className="w-4 h-4" />
+                Hubungi Pembeli
+              </Button>
+            </div>
+
+            {/* CALENDAR SECTION */}
+            <div className="px-6 py-6 space-y-4 border border-primary bg-card flex-1">
+              <h1 className="text-xl font-display font-extrabold flex items-center gap-2">
+                <TbCalendar className="w-5 h-5 text-primary" /> Kalender
+                Pengerjaan
+              </h1>
+
+              <Calendar
+                mode="range"
+                selected={dateRange}
+                className="w-full"
+                classNames={{
+                  months: "w-full flex flex-col space-y-4",
+                  month: "w-full space-y-4",
+                  table: "w-full border-collapse space-y-1",
+                  head_row: "flex w-full",
+                  head_cell:
+                    "text-muted-foreground rounded-md w-full font-normal text-[0.8rem]",
+                  row: "flex w-full mt-2",
+                  cell: "text-center text-sm p-0 relative w-full focus-within:relative focus-within:z-20",
+                  day: "h-9 w-full p-0 font-normal aria-selected:opacity-100 hover:bg-accent hover:text-accent-foreground aspect-auto rounded-md",
+                }}
+                locale={idLocale}
+                modifiers={{
+                  payment: paymentDate,
+                  completion: completionDate,
+                }}
+                modifiersStyles={{
+                  payment: {
+                    fontWeight: "bold",
+                    textDecoration: "underline",
+                    color: "#dc2626",
+                  },
+                  completion: {
+                    fontWeight: "bold",
+                    color: "#16a34a",
+                  },
+                }}
+              />
+
+              <div className="space-y-2 text-xs border-t pt-3">
+                <div className="flex justify-between items-center">
+                  <span className="text-muted-foreground">
+                    Jatuh Tempo Bayar:
+                  </span>
+                  <Badge
+                    variant="outline"
+                    className="text-red-600 border-red-200 bg-red-50"
+                  >
+                    {paymentDate.toLocaleDateString("id-ID", {
+                      day: "numeric",
+                      month: "short",
+                    })}
+                  </Badge>
+                </div>
+                <div className="flex justify-between items-center">
+                  <span className="text-muted-foreground">
+                    Estimasi Selesai:
+                  </span>
+                  <Badge
+                    variant="outline"
+                    className="text-green-600 border-green-200 bg-green-50"
+                  >
+                    {completionDate.toLocaleDateString("id-ID", {
+                      day: "numeric",
+                      month: "short",
+                    })}
+                  </Badge>
+                </div>
+                <div className="flex justify-between items-center">
+                  <span className="text-muted-foreground">Durasi:</span>
+                  <span className="font-medium">{deliveryDays} Hari Kerja</span>
+                </div>
+              </div>
+            </div>
           </div>
         </div>
 
+        {/* --- DIALOGS (Hidden Logic) --- */}
+
+        {/* Update Progress Dialog */}
         <Dialog open={showProgressDialog} onOpenChange={setShowProgressDialog}>
           <DialogContent>
             <DialogHeader>
@@ -788,7 +938,7 @@ const SellerOrderDetailPage = () => {
                 />
                 {progressUploading && (
                   <div className="flex items-center text-sm text-muted-foreground">
-                    <Loader2 className="animate-spin mr-2 h-4 w-4" />
+                    <TbLoader className="animate-spin mr-2 h-4 w-4" />
                     Mengupload...
                   </div>
                 )}
@@ -807,7 +957,7 @@ const SellerOrderDetailPage = () => {
                           onClick={() => handleRemoveProgressFile(index)}
                           className="h-6 w-6"
                         >
-                          <X className="h-4 w-4 text-destructive" />
+                          <TbX className="h-4 w-4 text-destructive" />
                         </Button>
                       </div>
                     ))}
@@ -827,6 +977,7 @@ const SellerOrderDetailPage = () => {
           </DialogContent>
         </Dialog>
 
+        {/* Deliver Dialog */}
         <Dialog open={showDeliverDialog} onOpenChange={setShowDeliverDialog}>
           <DialogContent>
             <DialogHeader>
@@ -858,7 +1009,7 @@ const SellerOrderDetailPage = () => {
                 />
                 {deliveryUploading && (
                   <div className="flex items-center text-sm text-muted-foreground">
-                    <Loader2 className="animate-spin mr-2 h-4 w-4" />
+                    <TbLoader className="animate-spin mr-2 h-4 w-4" />
                     Mengupload...
                   </div>
                 )}
@@ -877,7 +1028,7 @@ const SellerOrderDetailPage = () => {
                           onClick={() => handleRemoveDeliveryFile(index)}
                           className="h-6 w-6"
                         >
-                          <X className="h-4 w-4 text-destructive" />
+                          <TbX className="h-4 w-4 text-destructive" />
                         </Button>
                       </div>
                     ))}
@@ -897,7 +1048,7 @@ const SellerOrderDetailPage = () => {
           </DialogContent>
         </Dialog>
 
-        {/* REJECT DIALOG */}
+        {/* Reject Dialog */}
         <Dialog open={showRejectDialog} onOpenChange={setShowRejectDialog}>
           <DialogContent>
             <DialogHeader>
